@@ -118,7 +118,7 @@ packageDecl
     ;
 
 moduleDecl
-    : MODULE IDENTIFIER block?
+    : MODULE IDENTIFIER block
     ;
 
 importDecl
@@ -144,7 +144,13 @@ declaration
 
 statement
     : declaration
-    | matchStmt
+    | flowStmt
+    | block
+    | expressionStmt
+    ;
+
+flowStmt
+    : matchStmt
     | ifStmt
     | whileStmt
     | forStmt
@@ -155,8 +161,10 @@ statement
     | breakStmt
     | continueStmt
     | conditionStmt
-    | block
-    | expression SEMICOLON
+    ;
+
+expressionStmt
+    : expression SEMICOLON?
     ;
 
 block

@@ -20,7 +20,7 @@ top_level_item  = module_decl | declaration | statement ;
 
 package_decl    = "package" , identifier , [ ";" ] ;
 
-module_decl     = "module" , identifier , [ block ] ;
+module_decl     = "module" , identifier , block ;
 
 import_decl     = "import" , (
                     identifier , string_literal , [ "as" , identifier ]
@@ -34,9 +34,12 @@ import_path     = identifier , { "." , identifier } | string_literal ;
 declaration     = variable_decl | function_decl | extension_decl | class_decl
                 | struct_decl | enum_decl | interface_decl | contract_decl | import_decl ;
 
-statement       = declaration | match_stmt | if_stmt | while_stmt | for_stmt | using_stmt
-                | try_stmt | throw_stmt | return_stmt | break_stmt | continue_stmt
-                | condition_stmt | block | expression , ";" ;
+statement       = declaration | flow_stmt | block | expression_stmt ;
+
+flow_stmt       = match_stmt | if_stmt | while_stmt | for_stmt | using_stmt | try_stmt
+                | throw_stmt | return_stmt | break_stmt | continue_stmt | condition_stmt ;
+
+expression_stmt = expression , [ ";" ] ;
 
 block           = "{" , { statement } , "}" ;
 

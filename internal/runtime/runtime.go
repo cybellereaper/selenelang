@@ -335,10 +335,9 @@ type taskResult struct {
 }
 
 type Task struct {
-	once    sync.Once
-	result  taskResult
-	settled bool
-	ch      chan taskResult
+	once   sync.Once
+	result taskResult
+	ch     chan taskResult
 }
 
 func NewTask() *Task {
@@ -358,20 +357,10 @@ func (t *Task) await() taskResult {
 		res, ok := <-t.ch
 		if ok {
 			t.result = res
-		} else {
-			t.result = taskResult{value: NullValue, err: nil}
+			return
 		}
-		t.settled = true
+		t.result = taskResult{value: NullValue, err: nil}
 	})
-	if !t.settled {
-		res, ok := <-t.ch
-		if ok {
-			t.result = res
-		} else {
-			t.result = taskResult{value: NullValue, err: nil}
-		}
-		t.settled = true
-	}
 	return t.result
 }
 

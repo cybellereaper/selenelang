@@ -204,13 +204,11 @@ func parseDependencyLine(deps map[string]Dependency, line string) error {
 }
 
 func splitKeyValue(line string) (string, string, bool) {
-	parts := strings.SplitN(line, "=", 2)
-	if len(parts) != 2 {
+	key, value, ok := strings.Cut(line, "=")
+	if !ok {
 		return "", "", false
 	}
-	key := strings.TrimSpace(parts[0])
-	value := strings.TrimSpace(parts[1])
-	return key, value, true
+	return strings.TrimSpace(key), strings.TrimSpace(value), true
 }
 
 func parseString(value string) (string, error) {

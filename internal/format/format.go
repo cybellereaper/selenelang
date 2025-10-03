@@ -13,6 +13,7 @@ var noSpaceAfter = map[token.Type]bool{
 	token.LBRACKET: true,
 	token.DOT:      true,
 	token.SAFE_DOT: true,
+	token.LBRACE:   true,
 }
 
 var noSpaceBefore = map[token.Type]bool{
@@ -25,6 +26,32 @@ var noSpaceBefore = map[token.Type]bool{
 	token.SAFE_DOT:  true,
 	token.COLON:     true,
 	token.NON_NULL:  true,
+}
+
+var surroundWithSpaces = map[token.Type]bool{
+	token.ASSIGN:         true,
+	token.PLUS_ASSIGN:    true,
+	token.MINUS_ASSIGN:   true,
+	token.STAR_ASSIGN:    true,
+	token.SLASH_ASSIGN:   true,
+	token.PERCENT_ASSIGN: true,
+	token.PLUS:           true,
+	token.MINUS:          true,
+	token.ASTERISK:       true,
+	token.SLASH:          true,
+	token.PERCENT:        true,
+	token.EQ:             true,
+	token.NOT_EQ:         true,
+	token.LT:             true,
+	token.LTE:            true,
+	token.GT:             true,
+	token.GTE:            true,
+	token.OR:             true,
+	token.AND:            true,
+	token.IS:             true,
+	token.NOT_IS:         true,
+	token.ARROW:          true,
+	token.ELVIS:          true,
 }
 
 // Source formats Selene source code into a canonical layout.
@@ -74,8 +101,13 @@ func Source(src string) (string, error) {
 			indent++
 			newLine = true
 		case token.RBRACE:
-			b.WriteByte('\n')
-			newLine = true
+			if next := nextToken(tokens, i); next != nil && next.Type == token.ELSE {
+				b.WriteByte(' ')
+				newLine = false
+			} else {
+				b.WriteByte('\n')
+				newLine = true
+			}
 		case token.SEMICOLON:
 			b.WriteByte('\n')
 			newLine = true
@@ -105,6 +137,12 @@ func needsSpace(prev, curr token.Type) bool {
 	}
 	if noSpaceAfter[prev] || noSpaceBefore[curr] {
 		return false
+	}
+	if surroundWithSpaces[curr] {
+		return true
+	}
+	if curr == token.LBRACE {
+		return true
 	}
 	if isIdentifierLike(prev) && isIdentifierLike(curr) {
 		return true
@@ -159,4 +197,11 @@ func writeIndent(b *strings.Builder, indent int) {
 	for i := 0; i < indent; i++ {
 		b.WriteString("    ")
 	}
+}
+
+func nextToken(tokens []token.Token, index int) *token.Token {
+	if index+1 >= len(tokens) {
+		return nil
+	}
+	return &tokens[index+1]
 }

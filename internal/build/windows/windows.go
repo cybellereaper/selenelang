@@ -98,24 +98,24 @@ func BuildExecutable(startDir, sourceName, sourceCode, output string) error {
 }
 
 func findModuleRoot(start string) (string, error) {
-	dir, err := filepath.Abs(start)
-	if err != nil {
-		return "", err
-	}
-	for {
-		candidate := filepath.Join(dir, "go.mod")
-		if _, err := os.Stat(candidate); err == nil {
-			return dir, nil
-		}
-		if os.IsNotExist(err) {
-			parent := filepath.Dir(dir)
-			if parent == dir {
-				break
-			}
-			dir = parent
-			continue
-		}
-		return "", err
-	}
-	return "", fmt.Errorf("could not locate go.mod from %s", start)
+        dir, err := filepath.Abs(start)
+        if err != nil {
+                return "", err
+        }
+        for {
+                candidate := filepath.Join(dir, "go.mod")
+                if _, statErr := os.Stat(candidate); statErr == nil {
+                        return dir, nil
+                } else if os.IsNotExist(statErr) {
+                        parent := filepath.Dir(dir)
+                        if parent == dir {
+                                break
+                        }
+                        dir = parent
+                        continue
+                } else {
+                        return "", statErr
+                }
+        }
+        return "", fmt.Errorf("could not locate go.mod from %s", start)
 }

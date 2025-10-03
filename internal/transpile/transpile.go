@@ -93,7 +93,8 @@ func ToGo(program *ast.Program) (string, error) {
 		emitter.writeLine("}")
 	}
 
-	return emitter.builder.String(), nil
+	out := strings.TrimRight(emitter.builder.String(), "\n") + "\n"
+	return out, nil
 }
 
 type goEmitter struct {
@@ -101,12 +102,14 @@ type goEmitter struct {
 	indent      int
 	needsHelper bool
 	usesElvis   bool
+	lastBlank   bool
 }
 
 func (e *goEmitter) writeLine(parts ...string) {
 	line := strings.Join(parts, "")
 	if line == "" {
 		e.builder.WriteByte('\n')
+		e.lastBlank = true
 		return
 	}
 	for i := 0; i < e.indent; i++ {
@@ -114,16 +117,18 @@ func (e *goEmitter) writeLine(parts ...string) {
 	}
 	e.builder.WriteString(line)
 	e.builder.WriteByte('\n')
+	e.lastBlank = false
 }
 
 func (e *goEmitter) ensureBlankLine() {
 	if e.builder.Len() == 0 {
 		return
 	}
-	if strings.HasSuffix(e.builder.String(), "\n\n") {
+	if e.lastBlank {
 		return
 	}
 	e.builder.WriteByte('\n')
+	e.lastBlank = true
 }
 
 func (e *goEmitter) emitProgramItem(item ast.ProgramItem) {
@@ -253,7 +258,13 @@ func (e *goEmitter) emitFunction(fn *ast.FunctionDeclaration) {
 		}
 		params = append(params, fmt.Sprintf("%s any", pname))
 	}
-	e.writeLine(fmt.Sprintf("func %s(%s) any {", name, strings.Join(params, ", ")))
+	signature := fmt.Sprintf("func %s(%s)", name, strings.Join(params, ", "))
+	if fn.ReturnType != nil {
+		signature += " " + e.goTypeName(fn.ReturnType)
+	} else if fn.IsExprBody || fn.Body == nil {
+		signature += " any"
+	}
+	e.writeLine(signature + " {")
 	e.indent++
 	if fn.IsExprBody {
 		if fn.BodyExpr != nil {
@@ -268,6 +279,13 @@ func (e *goEmitter) emitFunction(fn *ast.FunctionDeclaration) {
 	}
 	e.indent--
 	e.writeLine("}")
+}
+
+func (e *goEmitter) goTypeName(t *ast.TypeAnnotation) string {
+	if t == nil || t.Name == nil {
+		return "any"
+	}
+	return t.Name.Name
 }
 
 func (e *goEmitter) forInit(stmt ast.Statement) string {
