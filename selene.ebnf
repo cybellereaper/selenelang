@@ -1,0 +1,128 @@
+(* ----------------- LEXICAL ----------------- *)
+
+identifier      = letter , { letter | digit | "_" } ;
+letter          = "A".."Z" | "a".."z" ;
+digit           = "0".."9" ;
+
+number          = digit , { digit } ;
+string          = '"' , { character - '"' } , '"' ;
+boolean         = "true" | "false" ;
+null            = "null" ;
+
+(* ----------------- TYPES ----------------- *)
+
+type            = identifier , [ "<" , type , { "," , type } , ">" ] , [ "?" ] ;
+param           = identifier , ":" , type ;
+param_list      = [ param , { "," , param } ] ;
+type_param_list = identifier , { "," , identifier } ;
+
+(* ----------------- EXPRESSIONS ----------------- *)
+
+expression      = assignment ;
+
+assignment      = conditional , [ "=" , expression ] ;
+
+conditional     = logical_or , [ "?:", expression ] ;           (* Elvis operator *)
+
+logical_or      = logical_and , { "||" , logical_and } ;
+logical_and     = equality , { "&&" , equality } ;
+
+equality        = comparison , { ("==" | "!=") , comparison } ;
+comparison      = additive , { ("<" | "<=" | ">" | ">=" | "is" | "!is") , additive } ;
+
+additive        = multiplicative , { ("+" | "-") , multiplicative } ;
+multiplicative  = unary , { ("*" | "/" | "%") , unary } ;
+
+unary           = [ "!" | "-" ] , unary | postfix ;
+
+postfix         = primary , { 
+                    ("." , identifier)                      (* member access *)
+                  | ("[" , expression , "]")                (* index access *)
+                  | ("?.", identifier)                      (* safe call *)
+                  | ("!!")                                   (* non-null assert *)
+                  | ("(" , [ argument_list ] , ")")         (* function call *)
+                 } ;
+
+argument_list   = expression , { "," , expression } ;
+
+primary         = number | string | boolean | null
+                | identifier
+                | array_literal
+                | object_literal
+                | await_expr
+                | "(" , expression , ")" ;
+
+array_literal   = "[" , [ expression , { "," , expression } ] , "]" ;
+object_literal  = "{" , [ pair , { "," , pair } ] , "}" ;
+pair            = ( string | identifier ) , ":" , expression ;
+
+await_expr      = "await" , expression ;
+
+(* ----------------- STATEMENTS ----------------- *)
+
+statement       = variable_decl
+                | function_decl
+                | class_decl
+                | struct_decl
+                | enum_decl
+                | contract_decl
+                | import_decl
+                | match_stmt
+                | block
+                | expression , ";" ;
+
+block           = "{" , { statement } , "}" ;
+
+variable_decl   = ("let" | "var") , identifier , [ ":" , type ] , "=" , expression , ";" ;
+
+(* ----------------- FUNCTIONS ----------------- *)
+
+function_decl   = "fn" , identifier , [ "<" , type_param_list , ">" ] ,
+                  "(" , [ param_list ] , ")" ,
+                  [ ":" , type ] ,
+                  [ "async" ] ,
+                  [ contract_block ] ,
+                  ( block | "=" , expression , ";" ) ;
+
+contract_block  = "contract" , "{" , { contract_clause } , "}" ;
+contract_clause = "returns" , "(" , [ expression ] , ")" , "=>" , condition , ";" ;
+condition       = expression ;
+
+(* ----------------- CLASSES ----------------- *)
+
+class_decl      = "class" , identifier , "(" , [ param_list ] , ")" ,
+                  [ ":" , identifier ] ,                       (* inheritance/trait impl *)
+                  [ block ] ;
+
+(* ----------------- STRUCTS ----------------- *)
+
+struct_decl     = "struct" , identifier , "(" , [ param_list ] , ")" ,
+                  [ block ] ;
+
+(* ----------------- ENUMS ----------------- *)
+
+enum_decl       = "enum" , identifier , [ "<" , type_param_list , ">" ] ,
+                  "{" , { enum_case } , "}" ;
+
+enum_case       = identifier , [ "(" , [ param_list ] , ")" ] , ";" ;
+
+(* ----------------- MATCH ----------------- *)
+
+match_stmt      = "match" , expression , "{" ,
+                  { pattern , "=>", statement } ,
+                  "}" ;
+
+pattern         = literal_pattern | identifier_pattern | struct_pattern | object_pattern ;
+
+literal_pattern = number | string | boolean | "null" ;
+identifier_pattern = identifier ;
+struct_pattern  = identifier , "(" , [ pattern , { "," , pattern } ] , ")" ;
+object_pattern  = "{" , [ pair_pattern , { "," , pair_pattern } ] , "}" ;
+pair_pattern    = ( string | identifier ) , ":" , pattern ;
+
+(* ----------------- MODULES ----------------- *)
+
+program         = { module_decl | statement } ;
+
+module_decl     = "module" , identifier , "{" , { statement } , "}" ;
+import_decl     = "import" , identifier , { "." , identifier } , [ "as" , identifier ] , ";" ;
