@@ -1,0 +1,31 @@
+// User-defined data types in Selene.
+struct Point(x: Number, y: Number) {
+    fn describe(): String {
+        return "Point(" + self.x + ", " + self.y + ")";
+    }
+}
+
+class Greeter(name: String) {
+    fn greet(target: String): String {
+        return self.name + ", " + target;
+    }
+}
+
+enum Option {
+    Some(value: Number);
+    None;
+}
+
+let origin = Point(0, 0);
+let offset = Point(3, 4);
+let greeter = Greeter("Selene");
+let value = Option.Some(41);
+
+print(origin.describe());
+print(offset.describe());
+print(greeter.greet("friend"));
+
+match value {
+    Some(v) => print("value + 1 =", v + 1);
+    None => print("no value");
+}
