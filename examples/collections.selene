@@ -1,0 +1,18 @@
+// Showcase arrays, objects, optional chaining, and indexing.
+let toolkit = {
+    name: "Selene",
+    version: "0.1.0",
+    features: ["lexer", "parser", "runtime", "docs"],
+    maintainer: null
+};
+
+fn describeToolkit() {
+    print("name => " + toolkit.name);
+    print("version => " + toolkit.version);
+    print("first feature => " + toolkit.features[0]);
+    let maintainer = toolkit.maintainer?.name ?: "Community";
+    print("maintainer => " + maintainer);
+    print("version major => " + toolkit.version[0]);
+}
+
+describeToolkit();

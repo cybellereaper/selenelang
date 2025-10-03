@@ -1,0 +1,10 @@
+[project]
+name = "selenelang"
+version = "0.8.0"
+entry = "cmd/selene"
+
+[docs]
+paths = ["docs", "README.md"]
+
+[examples]
+roots = ["examples"]

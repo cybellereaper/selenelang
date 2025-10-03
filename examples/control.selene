@@ -1,0 +1,37 @@
+// Demonstrates Selene control flow.
+var total = 0;
+
+for (let i = 0; i < 10; i = i + 1) {
+    if i % 2 == 0 {
+        continue;
+    }
+    if i > 7 {
+        break;
+    }
+    total = total + i;
+}
+
+var countdown = 3;
+while countdown > 0 {
+    print("tick", countdown);
+    countdown = countdown - 1;
+}
+
+fn fib(n: Number): Number {
+    if n <= 1 {
+        return n;
+    }
+    return fib(n - 1) + fib(n - 2);
+}
+
+print("total", total);
+print("fib(6)", fib(6));
+
+var attempts = 0;
+while true {
+    attempts = attempts + 1;
+    if attempts == 3 {
+        print("finished after", attempts, "tries");
+        break;
+    }
+}

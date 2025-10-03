@@ -1,0 +1,29 @@
+package main;
+
+module math_utils {
+    fn increment(n: Number): Number => n + 1;
+    fn triple(n: Number): Number => n * 3;
+}
+
+import utils "math_utils";
+
+fn compute(value: Number): Number {
+    var result = value;
+    result += utils.increment(value);
+    result *= 2;
+    result -= 4;
+    result /= 3;
+    result %= 5;
+    return result;
+}
+
+fn main() {
+    let start = 6;
+    var score = start;
+    score += 2;
+    score *= 3;
+    print("score:", score);
+    print("compute(score):", compute(score));
+}
+
+main();

@@ -1,0 +1,29 @@
+package examples
+
+struct Trace(name: String) {
+    fn close() {
+        print("closing", self.name);
+    }
+}
+
+fn open(name: String): Trace {
+    print("opening", name);
+    return Trace(name);
+}
+
+fn risky(flag: Boolean) {
+    if flag {
+        throw "something went wrong";
+    }
+    print("all good");
+}
+
+using scope = open("session.log") {
+    try {
+        risky(true);
+    } catch (err) {
+        print("caught:", err);
+    } finally {
+        print("finally always runs");
+    }
+}
