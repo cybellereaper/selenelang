@@ -128,7 +128,7 @@ The server speaks the [Language Server Protocol](https://microsoft.github.io/lan
 
 Many editors support custom language servers out of the box:
 
-- **VS Code** – Open the `vscode-extension/` folder in VS Code, run `npm install`, and launch the provided extension (`F5` → **Launch Extension**) to load Selene syntax highlighting and automatically start `selene lsp`. The extension also exposes a **Selene: Restart Language Server** command and can be packaged with [`vsce`](https://code.visualstudio.com/api/working-with-extensions/publishing-extension).
+- **VS Code** – Open the `vscode-extension/` folder in VS Code, run `npm install`, and launch the provided extension (`F5` → **Launch Extension**) to load Selene syntax highlighting and automatically start `selene lsp`. Ship ready-to-install builds with `npm run package`, which produces `dist/selene-lang-support.vsix` that you can sideload or upload to a GitHub Release.
 - **Neovim** – Use `:LspStart` with a custom client definition via `lspconfig`, e.g. `cmd = { "selene", "lsp" }`.
 - **Helix / Zed / Sublime** – Add a language server command referencing `selene lsp` and map it to `.selene` sources.
 
@@ -141,6 +141,23 @@ The server currently publishes:
 - Document lifecycle awareness (`didOpen`, `didChange`, `didSave`, `didClose`) so diagnostics clear as files are edited.
 
 Hover information, go-to-definition, and other advanced tooling can build on the same server foundation.
+
+## VS Code extension releases
+
+Automated packaging keeps the extension easy to distribute. The repository includes a GitHub Actions workflow that
+
+- installs the extension dependencies,
+- runs `npm run package` to emit `dist/selene-lang-support.vsix`, and
+- uploads the result both as a build artifact and as a GitHub Release asset when you push an `extension-v*` tag.
+
+Trigger the workflow manually from the **Actions** tab or by tagging a release:
+
+```bash
+git tag extension-v0.1.0
+git push origin extension-v0.1.0
+```
+
+Once the workflow completes, download the generated `.vsix` from the release page or install it locally with `code --install-extension dist/selene-lang-support.vsix`.
 
 ## Example gallery
 

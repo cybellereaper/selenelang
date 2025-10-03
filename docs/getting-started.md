@@ -120,7 +120,7 @@ selene lsp
 
 Point your editor's LSP client at the command above (for example, `cmd = { "selene", "lsp" }` in Neovim `lspconfig`). The server reports lexer/parser errors, clears diagnostics on save, formats documents, indexes document/workspace symbols, and offers keyword/builtin completions out of the box.
 
-For Visual Studio Code users, the repository now ships with a dedicated extension under `vscode-extension/`. Open that folder in VS Code, run `npm install`, and start the **Launch Extension** debug configuration to load Selene syntax highlighting and a preconfigured language server client. You can package and distribute the extension with the [`vsce` publisher tooling](https://code.visualstudio.com/api/working-with-extensions/publishing-extension) once you're ready to share it.
+For Visual Studio Code users, the repository now ships with a dedicated extension under `vscode-extension/`. Open that folder in VS Code, run `npm install`, and start the **Launch Extension** debug configuration to load Selene syntax highlighting and a preconfigured language server client. When you're ready to share it, generate a distributable archive with `npm run package`—the script produces `dist/selene-lang-support.vsix`, which you can install locally with `code --install-extension` or upload as a GitHub Release asset.
 
 ## Project layout
 

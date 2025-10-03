@@ -22,10 +22,25 @@ The extension exposes a few settings under **Selene**:
 - `selene.languageServerArgs`: Arguments passed to the command (defaults to `["lsp"]`).
 - `selene.languageServerEnv`: Additional environment variables merged into the server process.
 
+## Packaging
+
+Run the packaging scripts to build a distributable `.vsix` archive:
+
+```bash
+npm install
+npm run package
+```
+
+The command produces `dist/selene-lang-support.vsix`, which you can install locally with `code --install-extension dist/selene-lang-support.vsix` or attach to a GitHub Release.
+
+### Automated releases
+
+The repository ships with a GitHub Actions workflow (`.github/workflows/extension-release.yml`) that runs the same packaging command on demand or whenever you push an `extension-v*` tag. It uploads the `.vsix` as both a workflow artifact and a release asset so the extension is always available from the **Releases** page.
+
 ## Development
 
 1. Run `npm install` inside the `vscode-extension/` directory to fetch dependencies.
 2. Open the folder in VS Code and run the **Launch Extension** configuration to debug.
 3. The extension entrypoint is `extension.js`, which wires the VS Code client to the Selene language server.
 
-The extension is authored in plain JavaScript to minimize build tooling—no bundlers or transpilers are required.
+The extension is authored in plain JavaScript to minimize build tooling—no bundlers or transpilers are required. The additional packaging dependencies only run when you invoke the scripts above.
