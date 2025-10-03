@@ -1,3 +1,6 @@
+package examples
+
+// Pattern matching over objects with destructuring and fallbacks.
 let shapes = [
     { kind: "circle", radius: 2 },
     { kind: "square", side: 4 },
@@ -12,7 +15,11 @@ fn describe(shape: Any) {
     }
 }
 
-print("Cataloging shapes:");
-describe(shapes[0]);
-describe(shapes[1]);
-describe(shapes[2]);
+fn main() {
+    print("Cataloging shapes:");
+    describe(shapes[0]);
+    describe(shapes[1]);
+    describe(shapes[2]);
+}
+
+main();

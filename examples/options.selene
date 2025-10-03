@@ -1,3 +1,6 @@
+package examples
+
+// Optional chaining, Elvis defaults, and non-null assertions.
 let profile = {
     name: "Nova",
     contact: {
@@ -6,11 +9,25 @@ let profile = {
     }
 };
 
-let email = profile.contact?.email ?: "unknown@selene.dev";
-print("Email: " + email);
+fn reportContact(user: Any) {
+    let email = user.contact?.email ?: "unknown@selene.dev";
+    print("Email =>" + " " + email);
 
-let city = profile.contact?.address?.city ?: "Unknown";
-print("City: " + city);
+    let city = user.contact?.address?.city ?: "Unknown";
+    print("City =>" + " " + city);
 
-let safeContact = profile.contact!!;
-print("Forced contact email: " + safeContact.email);
+    if user.contact != null {
+        let forced = user.contact!!;
+        print("Forced contact email =>" + " " + forced.email);
+    } else {
+        print("No contact info recorded.");
+    }
+}
+
+fn main() {
+    reportContact(profile);
+    let anonymous = { name: "Nova", contact: null };
+    reportContact(anonymous);
+}
+
+main();

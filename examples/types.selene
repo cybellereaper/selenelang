@@ -1,4 +1,6 @@
-// User-defined data types in Selene.
+package examples
+
+// Structs, classes, enums, and pattern matching on enum cases.
 struct Point(x: Number, y: Number) {
     fn describe(): String {
         return "Point(" + self.x + ", " + self.y + ")";
@@ -16,16 +18,20 @@ enum Option {
     None;
 }
 
-let origin = Point(0, 0);
-let offset = Point(3, 4);
-let greeter = Greeter("Selene");
-let value = Option.Some(41);
+fn main() {
+    let origin = Point(0, 0);
+    let offset = Point(3, 4);
+    let greeter = Greeter("Selene");
+    let value = Option.Some(41);
 
-print(origin.describe());
-print(offset.describe());
-print(greeter.greet("friend"));
+    print(origin.describe());
+    print(offset.describe());
+    print(greeter.greet("friend"));
 
-match value {
-    Some(v) => print("value + 1 =", v + 1);
-    None => print("no value");
+    match value {
+        Some(v) => print("value + 1 =", v + 1);
+        None => print("no value");
+    }
 }
+
+main();

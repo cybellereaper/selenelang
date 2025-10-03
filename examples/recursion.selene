@@ -1,11 +1,26 @@
-fn factorial(n: Number) {
+package examples
+
+// Recursive functions combining match clauses and arithmetic.
+fn factorial(n: Number): Number {
     match n {
-        0 => 1;
-        1 => 1;
-        value => value * factorial(value - 1);
+        0 => return 1;
+        1 => return 1;
+        value => return value * factorial(value - 1);
     }
 }
 
-print("Factorial results:");
-print("5! = " + factorial(5));
-print("7! = " + factorial(7));
+fn fib(n: Number): Number {
+    if n <= 1 {
+        return n;
+    }
+    return fib(n - 1) + fib(n - 2);
+}
+
+fn main() {
+    print("Factorial results:");
+    print("5! = " + factorial(5));
+    print("7! = " + factorial(7));
+    print("Fibonacci(8) = " + fib(8));
+}
+
+main();

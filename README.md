@@ -2,6 +2,8 @@
 
 # Selene Language Toolkit
 
+[![Go Tests](https://github.com/cybellereaper/selenelang/actions/workflows/go-tests.yml/badge.svg)](https://github.com/cybellereaper/selenelang/actions/workflows/go-tests.yml)
+
 Selene is an experimental programming language frontend implemented in Go. The toolchain now includes a lexer, Pratt-style parser, rich abstract syntax tree (AST) types, and a lightweight tree-walking interpreter. Use it to experiment with language ideas, embed Selene as a scripting language, or extend the runtime with new features.
 
 ## Features
@@ -92,6 +94,12 @@ Reformat Selene sources in place (or print the formatted output to STDOUT):
 selene fmt -w examples/*.selene
 ```
 
+Run every curated example through the interpreter, VM, or JIT pipeline:
+
+```bash
+selene test --mode all --verbose
+```
+
 Transpile Selene to Go scaffolding for experimentation or embedding:
 
 ```bash
@@ -166,26 +174,27 @@ Once the workflow completes, download the generated `.vsix` from the release pag
 
 Explore the scripts in the `examples/` directory to get a feel for different Selene features:
 
-- `examples/hello.selene` – introductory greetings, expression-bodied functions, and simple printing.
-- `examples/math.selene` – arithmetic helpers, composing functions, and string interpolation via `+` concatenation.
-- `examples/collections.selene` – arrays, objects, optional property access, and indexing into both arrays and strings.
-- `examples/options.selene` – optional chaining, Elvis defaults, and non-null assertions in practice.
+- `examples/language_tour.selene` – a single program that threads together modules, structs, enums, condition blocks, and loops.
+- `examples/hello.selene` – immutable bindings, expression-bodied functions, and string formatting helpers.
+- `examples/math.selene` – arithmetic helpers exported from a module and consumed via imports.
+- `examples/collections.selene` – arrays, objects, optional property access, and Elvis defaults.
+- `examples/options.selene` – navigating nested optionals, non-null assertions, and graceful fallbacks.
 - `examples/patterns.selene` – destructuring objects with `match` statements and pattern bindings.
-- `examples/recursion.selene` – recursive functions that use `match` clauses for control flow.
-- `examples/control.selene` – `if`/`else` branches, `for`/`while` loops, and the `return`/`break`/`continue` statements.
-- `examples/types.selene` – struct methods, simple classes, enums, and pattern matching on enum cases.
-- `examples/modules.selene` – modules, identifier-based imports, and reusing exported helpers.
-- `examples/packages.selene` – package headers, Go-style string imports, and augmented assignment in action.
-- `examples/contracts.selene` – standalone contract declarations and inline postconditions that validate function results.
-- `examples/strings.selene` – interpolation, formatting directives, raw strings, and triple-quoted literals.
-- `examples/extensions.selene` – extension methods on built-in types and reusable fluent helpers.
-- `examples/pointers.selene` – address-of/dereference, pointer aliasing, and swapping values by reference.
-- `examples/interfaces.selene` – structural interface conformance with classes, structs, and extension functions.
+- `examples/recursion.selene` – recursive factorial and Fibonacci implementations.
+- `examples/control.selene` – loops, conditionals, and early exits (`return`/`break`/`continue`).
+- `examples/types.selene` – struct methods, classes, enums, and matching on enum cases.
+- `examples/modules.selene` – declaring modules and importing their exports by name.
+- `examples/packages.selene` – package headers and augmented assignment operators.
+- `examples/contracts.selene` – reusable contract declarations and inline postconditions.
+- `examples/strings.selene` – interpolation, raw strings, format specifiers, and extensions.
+- `examples/extensions.selene` – extension methods on built-in types such as `String` and `Int`.
+- `examples/pointers.selene` – address-of/dereference operators and swapping by reference.
+- `examples/interfaces.selene` – structural interface conformance with structs and extension methods.
 - `examples/concurrency.selene` – spawning tasks, communicating over channels, and awaiting asynchronous work.
-- `examples/vm.selene` – exercises loops and functions that are great to run through the bytecode VM pipeline.
-- `examples/errors.selene` – `using` statements, `try`/`catch`/`finally`, and explicit `throw` expressions.
-- `examples/conditions.selene` – `condition` dispatch blocks for rule-driven, OOP-style control flow.
-- `examples/dependency.selene` – importing a vendored module from `github.com/selene-lang/richmath` using string-based package paths.
+- `examples/vm.selene` – bytecode-friendly loops and accumulation helpers for VM experimentation.
+- `examples/errors.selene` – `using` blocks, `try`/`catch`/`finally`, and explicit `throw` expressions.
+- `examples/conditions.selene` – rule-driven `condition { when ... }` dispatch.
+- `examples/dependency.selene` – importing a vendored module from `github.com/selene-lang/richmath`.
 
 Run any script with `selene path/to/script.selene` to see the output directly in your terminal.
 

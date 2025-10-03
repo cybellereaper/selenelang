@@ -42,7 +42,7 @@ Verify the installation by checking the version banner:
 selene --help
 ```
 
-You should see usage information describing the `run`, `tokens`, `fmt`, `build`, `transpile`, `init`, `deps`, and `lsp` subcommands.
+You should see usage information describing the `run`, `test`, `tokens`, `fmt`, `build`, `transpile`, `init`, `deps`, and `lsp` subcommands.
 
 ## Run your first script
 
@@ -92,6 +92,12 @@ Format source files in place (omit `-w` to print the formatted result to STDOUT)
 
 ```bash
 selene fmt -w examples/*.selene
+```
+
+Exercise every bundled example through the interpreter, VM, or JIT backend:
+
+```bash
+selene test --mode all
 ```
 
 Generate Go scaffolding from Selene code:
