@@ -11,7 +11,8 @@ import (
 // specialized evaluation closures. The implementation reuses the interpreter's
 // semantics but avoids repeatedly performing large type switches at runtime.
 type Program struct {
-	steps []compiledStep
+	steps    []compiledStep
+	analysis runtime.MainAnalysis
 }
 
 type compiledStep struct {
@@ -28,7 +29,8 @@ func Compile(program *ast.Program) (*Program, error) {
 	for _, item := range program.Items {
 		steps = append(steps, compileProgramItem(item))
 	}
-	return &Program{steps: steps}, nil
+	analysis := runtime.AnalyzeMain(program)
+	return &Program{steps: steps, analysis: analysis}, nil
 }
 
 func compileProgramItem(item ast.ProgramItem) compiledStep {
@@ -79,7 +81,7 @@ func (p *Program) Run(rt *runtime.Runtime) (runtime.Value, error) {
 			last = runtime.NullValue
 		}
 	}
-	return last, nil
+	return runtime.InvokeMainIfNeeded(env, p.analysis, last)
 }
 
 // RunWithEnvironment executes the program against a specific environment. This
@@ -104,5 +106,5 @@ func (p *Program) RunWithEnvironment(env *runtime.Environment) (runtime.Value, e
 			last = runtime.NullValue
 		}
 	}
-	return last, nil
+	return runtime.InvokeMainIfNeeded(env, p.analysis, last)
 }

@@ -30,4 +30,3 @@ fn main() {
     reportContact(anonymous);
 }
 
-main();

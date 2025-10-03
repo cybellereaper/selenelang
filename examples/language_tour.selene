@@ -62,4 +62,3 @@ fn main() {
     run(Work.Done("Ship formatter"));
 }
 
-main();

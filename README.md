@@ -47,11 +47,11 @@ fn greet(name: String): String => greeting + ", " + name;
 fn main() {
     print(greet("Selene"));
 }
-
-main();
 ```
 
-This script demonstrates immutable `let` bindings, optional type annotations, expression-bodied functions (`=>`), string concatenation, first-class functions, and calling the built-in `print` helper. The final `main();` call drives execution just like a typical scripting entry point.
+```
+
+This script demonstrates immutable `let` bindings, optional type annotations, expression-bodied functions (`=>`), string concatenation, first-class functions, and calling the built-in `print` helper. Selene automatically invokes `main` for you, mirroring the Go toolchain's entry-point semantics.
 
 ## Using the CLI
 

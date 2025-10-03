@@ -31,4 +31,3 @@ fn main() {
     print("sum from task:", await task);
 }
 
-main();

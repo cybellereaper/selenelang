@@ -443,7 +443,7 @@ func initCommand(args []string) error {
 	if err := os.MkdirAll(filepath.Join(cwd, "docs"), 0o755); err != nil {
 		return err
 	}
-	mainSource := "package main;\n\nfn main() {\n    print(\"Hello from " + projectName + "!\");\n}\n\nmain();\n"
+	mainSource := "package main;\n\nfn main() {\n    print(\"Hello from " + projectName + "!\");\n}\n"
 	entryPath := filepath.Join(cwd, "src", "main.selene")
 	if err := os.WriteFile(entryPath, []byte(mainSource), 0o644); err != nil {
 		return err

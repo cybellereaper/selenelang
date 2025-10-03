@@ -29,4 +29,3 @@ fn main() {
     print("triple(score):", triple(score));
 }
 
-main();

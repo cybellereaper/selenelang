@@ -3,6 +3,10 @@ package runtime
 import (
 	"sync"
 	"testing"
+
+	"selenelang/internal/ast"
+	"selenelang/internal/lexer"
+	"selenelang/internal/parser"
 )
 
 func resetExtensions() {
@@ -73,4 +77,81 @@ func TestTaskJoinDeliversResultOnce(t *testing.T) {
 		t.Fatalf("Join did not return cached result on subsequent calls")
 	}
 	wg.Wait()
+}
+
+func TestRuntimeRunInvokesMainAutomatically(t *testing.T) {
+	program := parseProgram(t, `
+fn main() {
+    record();
+}
+`)
+	rt := New()
+	var calls int
+	rt.Environment().Set("record", NewBuiltin("record", func(args []Value) (Value, error) {
+		calls++
+		return NullValue, nil
+	}))
+	if _, err := rt.Run(program); err != nil {
+		t.Fatalf("run failed: %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("expected record to be called once, got %d", calls)
+	}
+}
+
+func TestRuntimeRunSkipsAutoMainWhenCalledExplicitly(t *testing.T) {
+	program := parseProgram(t, `
+fn main() {
+    record();
+}
+
+main();
+`)
+	rt := New()
+	var calls int
+	rt.Environment().Set("record", NewBuiltin("record", func(args []Value) (Value, error) {
+		calls++
+		return NullValue, nil
+	}))
+	if _, err := rt.Run(program); err != nil {
+		t.Fatalf("run failed: %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("expected record to be called once, got %d", calls)
+	}
+}
+
+func TestRuntimeRunChunkInvokesMainAutomatically(t *testing.T) {
+	program := parseProgram(t, `
+fn main() {
+    record();
+}
+`)
+	rt := New()
+	var calls int
+	rt.Environment().Set("record", NewBuiltin("record", func(args []Value) (Value, error) {
+		calls++
+		return NullValue, nil
+	}))
+	chunk, err := rt.Compile(program)
+	if err != nil {
+		t.Fatalf("compile failed: %v", err)
+	}
+	if _, err := rt.RunChunk(chunk); err != nil {
+		t.Fatalf("RunChunk failed: %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("expected record to be called once, got %d", calls)
+	}
+}
+
+func parseProgram(t *testing.T, source string) *ast.Program {
+	t.Helper()
+	l := lexer.New(source)
+	p := parser.New(l)
+	program := p.ParseProgram()
+	if errs := p.Errors(); len(errs) > 0 {
+		t.Fatalf("unexpected parse errors: %v", errs)
+	}
+	return program
 }

@@ -36,4 +36,3 @@ fn fib(n: Number): Number {
     return fib(n - 1) + fib(n - 2);
 }
 
-main();
