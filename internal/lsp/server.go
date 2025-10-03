@@ -1,105 +1,53 @@
 package lsp
 
 import (
-	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
-	"sync"
+	"sync/atomic"
 
 	"selenelang/internal/format"
 )
 
 type Server struct {
-	reader *bufio.Reader
-	writer *bufio.Writer
-
-	mu        sync.Mutex
-	documents map[string]*document
-
-	shuttingDown bool
+	conn         *jsonRPCConnection
+	documents    *DocumentStore
+	completer    *Completer
+	highlighter  *Highlighter
+	shuttingDown int32
 }
 
-type document struct {
-	Text    string
-	Version int
-}
-
-type requestMessage struct {
-	JSONRPC string          `json:"jsonrpc"`
-	ID      json.RawMessage `json:"id,omitempty"`
-	Method  string          `json:"method"`
-	Params  json.RawMessage `json:"params,omitempty"`
-}
-
-type responseMessage struct {
-	JSONRPC string          `json:"jsonrpc"`
-	ID      json.RawMessage `json:"id,omitempty"`
-	Result  interface{}     `json:"result,omitempty"`
-	Error   *responseError  `json:"error,omitempty"`
-}
-
-type responseError struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
-
-const (
-	jsonrpcVersion         = "2.0"
-	methodInitialize       = "initialize"
-	methodInitialized      = "initialized"
-	methodShutdown         = "shutdown"
-	methodExit             = "exit"
-	methodDidOpen          = "textDocument/didOpen"
-	methodDidChange        = "textDocument/didChange"
-	methodDidClose         = "textDocument/didClose"
-	methodDidSave          = "textDocument/didSave"
-	methodCompletion       = "textDocument/completion"
-	methodDidChangeConfig  = "workspace/didChangeConfiguration"
-	methodDidChangeWatched = "workspace/didChangeWatchedFiles"
-	methodDocumentSymbol   = "textDocument/documentSymbol"
-	methodWorkspaceSymbol  = "workspace/symbol"
-	methodDocumentFormat   = "textDocument/formatting"
-)
-
-var errClientExit = errors.New("client requested exit")
-
-// NewServer constructs a Language Server Protocol server that communicates over the provided streams.
 func NewServer(r io.Reader, w io.Writer) *Server {
+	analyzer := NewAnalyzer(nil)
 	return &Server{
-		reader:    bufio.NewReader(r),
-		writer:    bufio.NewWriter(w),
-		documents: make(map[string]*document),
+		conn:        newJSONRPCConnection(r, w),
+		documents:   NewDocumentStore(analyzer),
+		completer:   NewCompleter(),
+		highlighter: NewHighlighter(),
 	}
 }
 
-// Run processes incoming JSON-RPC requests until the client disconnects.
 func (s *Server) Run() error {
 	for {
-		payload, err := s.readMessage()
+		msg, err := s.conn.Read()
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				return nil
+			}
+			var syntaxErr *json.SyntaxError
+			if errors.As(err, &syntaxErr) {
+				continue
 			}
 			if errors.Is(err, errClientExit) {
 				return nil
 			}
 			return err
 		}
-
-		var msg requestMessage
-		if err := json.Unmarshal(payload, &msg); err != nil {
-			// Invalid messages are ignored per LSP robustness guidelines.
-			continue
-		}
-
 		if msg.Method == "" {
 			continue
 		}
-
 		if err := s.dispatch(msg); err != nil {
 			if errors.Is(err, errClientExit) {
 				return nil
@@ -108,6 +56,26 @@ func (s *Server) Run() error {
 		}
 	}
 }
+
+const (
+	methodInitialize             = "initialize"
+	methodInitialized            = "initialized"
+	methodShutdown               = "shutdown"
+	methodExit                   = "exit"
+	methodDidOpen                = "textDocument/didOpen"
+	methodDidChange              = "textDocument/didChange"
+	methodDidClose               = "textDocument/didClose"
+	methodDidSave                = "textDocument/didSave"
+	methodCompletion             = "textDocument/completion"
+	methodHover                  = "textDocument/hover"
+	methodDocumentSymbol         = "textDocument/documentSymbol"
+	methodWorkspaceSymbol        = "workspace/symbol"
+	methodDocumentFormat         = "textDocument/formatting"
+	methodSemanticTokensFull     = "textDocument/semanticTokens/full"
+	methodSemanticTokensRange    = "textDocument/semanticTokens/range"
+	methodDidChangeConfiguration = "workspace/didChangeConfiguration"
+	methodDidChangeWatchedFiles  = "workspace/didChangeWatchedFiles"
+)
 
 func (s *Server) dispatch(msg requestMessage) error {
 	switch msg.Method {
@@ -118,339 +86,353 @@ func (s *Server) dispatch(msg requestMessage) error {
 	case methodShutdown:
 		return s.handleShutdown(msg)
 	case methodExit:
-		return errClientExit
+		if atomic.LoadInt32(&s.shuttingDown) == 0 {
+			return errClientExit
+		}
+		return nil
 	case methodDidOpen:
-		s.handleDidOpen(msg)
+		return s.handleDidOpen(msg)
 	case methodDidChange:
-		s.handleDidChange(msg)
+		return s.handleDidChange(msg)
 	case methodDidClose:
-		s.handleDidClose(msg)
+		return s.handleDidClose(msg)
 	case methodDidSave:
-		s.handleDidSave(msg)
+		return s.handleDidSave(msg)
 	case methodCompletion:
 		return s.handleCompletion(msg)
+	case methodHover:
+		return s.handleHover(msg)
 	case methodDocumentSymbol:
 		return s.handleDocumentSymbol(msg)
 	case methodWorkspaceSymbol:
 		return s.handleWorkspaceSymbol(msg)
 	case methodDocumentFormat:
 		return s.handleDocumentFormatting(msg)
-	case methodDidChangeConfig, methodDidChangeWatched:
+	case methodSemanticTokensFull:
+		return s.handleSemanticTokensFull(msg)
+	case methodSemanticTokensRange:
+		return s.handleSemanticTokensRange(msg)
+	case methodDidChangeConfiguration, methodDidChangeWatchedFiles:
 		return nil
 	default:
 		if len(msg.ID) > 0 {
-			return s.replyError(msg.ID, -32601, fmt.Sprintf("method %s not found", msg.Method))
+			return s.conn.ReplyError(msg.ID, -32601, fmt.Sprintf("method %s not found", msg.Method))
 		}
+		return nil
 	}
-	return nil
 }
 
 func (s *Server) handleInitialize(msg requestMessage) error {
-	type initializeParams struct {
-		Capabilities map[string]interface{} `json:"capabilities"`
-		ClientInfo   map[string]string      `json:"clientInfo"`
+	var params struct {
+		Capabilities map[string]any `json:"capabilities"`
+		ClientInfo   map[string]any `json:"clientInfo"`
 	}
-	var params initializeParams
 	_ = json.Unmarshal(msg.Params, &params)
-
-	result := map[string]interface{}{
-		"capabilities": map[string]interface{}{
-			"textDocumentSync": map[string]interface{}{
+	tokenTypes, tokenModifiers := s.highlighter.Legend()
+	result := map[string]any{
+		"capabilities": map[string]any{
+			"textDocumentSync": map[string]any{
 				"openClose": true,
-				"change":    1, // TextDocumentSyncKindFull
+				"change":    1,
 				"save": map[string]bool{
 					"includeText": true,
 				},
 			},
-			"completionProvider": map[string]interface{}{
-				"triggerCharacters": []string{".", ":", "@"},
+			"completionProvider": map[string]any{
+				"triggerCharacters": []string{".", ":", "@", "(", ">"},
 			},
+			"hoverProvider":              true,
 			"documentSymbolProvider":     true,
 			"workspaceSymbolProvider":    true,
 			"documentFormattingProvider": true,
-			"hoverProvider":              false,
-			"definitionProvider":         false,
+			"semanticTokensProvider": map[string]any{
+				"legend": map[string]any{
+					"tokenTypes":     tokenTypes,
+					"tokenModifiers": tokenModifiers,
+				},
+				"range": true,
+				"full":  true,
+			},
 		},
 		"serverInfo": map[string]string{
 			"name":    "selene-lsp",
-			"version": "0.1.0",
+			"version": "0.2.0",
 		},
 	}
-
-	return s.reply(msg.ID, result)
+	return s.conn.Reply(msg.ID, result)
 }
 
 func (s *Server) handleShutdown(msg requestMessage) error {
-	s.shuttingDown = true
-	return s.reply(msg.ID, nil)
+	atomic.StoreInt32(&s.shuttingDown, 1)
+	return s.conn.Reply(msg.ID, nil)
 }
 
-func (s *Server) handleDidOpen(msg requestMessage) {
-	type didOpenParams struct {
+func (s *Server) handleDidOpen(msg requestMessage) error {
+	var params struct {
 		TextDocument struct {
-			URI      string `json:"uri"`
-			Language string `json:"languageId"`
-			Version  int    `json:"version"`
-			Text     string `json:"text"`
+			URI     string `json:"uri"`
+			Version int    `json:"version"`
+			Text    string `json:"text"`
 		} `json:"textDocument"`
 	}
-	var params didOpenParams
 	if err := json.Unmarshal(msg.Params, &params); err != nil {
-		return
+		return nil
 	}
-
-	s.mu.Lock()
-	s.documents[params.TextDocument.URI] = &document{Text: params.TextDocument.Text, Version: params.TextDocument.Version}
-	s.mu.Unlock()
-
-	s.publishDiagnostics(params.TextDocument.URI, analyzeDocument(params.TextDocument.Text))
+	snapshot := s.documents.Open(params.TextDocument.URI, params.TextDocument.Version, params.TextDocument.Text)
+	s.publishDiagnostics(params.TextDocument.URI, snapshot.Diagnostics)
+	return nil
 }
 
-func (s *Server) handleDidChange(msg requestMessage) {
-	type contentChange struct {
-		Text string `json:"text"`
-	}
-	type didChangeParams struct {
+func (s *Server) handleDidChange(msg requestMessage) error {
+	var params struct {
 		TextDocument struct {
 			URI     string `json:"uri"`
 			Version int    `json:"version"`
 		} `json:"textDocument"`
-		ContentChanges []contentChange `json:"contentChanges"`
+		ContentChanges []struct {
+			Text string `json:"text"`
+		} `json:"contentChanges"`
 	}
-	var params didChangeParams
 	if err := json.Unmarshal(msg.Params, &params); err != nil {
-		return
+		return nil
 	}
 	if len(params.ContentChanges) == 0 {
-		return
+		return nil
 	}
-
-	newText := params.ContentChanges[len(params.ContentChanges)-1].Text
-
-	s.mu.Lock()
-	s.documents[params.TextDocument.URI] = &document{Text: newText, Version: params.TextDocument.Version}
-	s.mu.Unlock()
-
-	s.publishDiagnostics(params.TextDocument.URI, analyzeDocument(newText))
+	text := params.ContentChanges[len(params.ContentChanges)-1].Text
+	snapshot := s.documents.Update(params.TextDocument.URI, params.TextDocument.Version, text)
+	s.publishDiagnostics(params.TextDocument.URI, snapshot.Diagnostics)
+	return nil
 }
 
-func (s *Server) handleDidSave(msg requestMessage) {
-	type didSaveParams struct {
+func (s *Server) handleDidSave(msg requestMessage) error {
+	var params struct {
 		TextDocument struct {
 			URI string `json:"uri"`
 		} `json:"textDocument"`
 		Text string `json:"text"`
 	}
-	var params didSaveParams
 	if err := json.Unmarshal(msg.Params, &params); err != nil {
-		return
+		return nil
 	}
-
 	text := params.Text
-	if text == "" {
-		s.mu.Lock()
-		if doc, ok := s.documents[params.TextDocument.URI]; ok {
-			text = doc.Text
-		}
-		s.mu.Unlock()
+	snapshot, ok := s.documents.Snapshot(params.TextDocument.URI)
+	if !ok {
+		return nil
 	}
+	version := snapshot.Version
 	if text == "" {
-		return
+		text = snapshot.Text
 	}
-	s.publishDiagnostics(params.TextDocument.URI, analyzeDocument(text))
+	snapshot = s.documents.Save(params.TextDocument.URI, version, text)
+	s.publishDiagnostics(params.TextDocument.URI, snapshot.Diagnostics)
+	return nil
 }
 
-func (s *Server) handleDidClose(msg requestMessage) {
-	type didCloseParams struct {
+func (s *Server) handleDidClose(msg requestMessage) error {
+	var params struct {
 		TextDocument struct {
 			URI string `json:"uri"`
 		} `json:"textDocument"`
 	}
-	var params didCloseParams
 	if err := json.Unmarshal(msg.Params, &params); err != nil {
-		return
+		return nil
 	}
-
-	s.mu.Lock()
-	delete(s.documents, params.TextDocument.URI)
-	s.mu.Unlock()
-
-	s.publishDiagnostics(params.TextDocument.URI, []Diagnostic{})
+	s.documents.Close(params.TextDocument.URI)
+	s.publishDiagnostics(params.TextDocument.URI, nil)
+	return nil
 }
 
 func (s *Server) handleCompletion(msg requestMessage) error {
-	type completionParams struct {
+	var params struct {
 		TextDocument struct {
 			URI string `json:"uri"`
 		} `json:"textDocument"`
+		Position Position `json:"position"`
 	}
-	var params completionParams
 	if err := json.Unmarshal(msg.Params, &params); err != nil {
-		return s.replyError(msg.ID, -32602, "invalid params")
+		return s.conn.ReplyError(msg.ID, -32602, "invalid params")
 	}
-
-	items := completionItems()
-	for i := range items {
-		if items[i].InsertText == "" {
-			items[i].InsertText = items[i].Label
-			items[i].InsertTextFormat = insertTextPlainText
-		}
+	snapshot, ok := s.documents.Snapshot(params.TextDocument.URI)
+	if !ok {
+		return s.conn.Reply(msg.ID, CompletionList{IsIncomplete: false, Items: nil})
 	}
+	list := s.completer.Completion(snapshot, params.Position)
+	return s.conn.Reply(msg.ID, list)
+}
 
-	return s.reply(msg.ID, CompletionList{IsIncomplete: false, Items: items})
+func (s *Server) handleHover(msg requestMessage) error {
+	var params struct {
+		TextDocument struct {
+			URI string `json:"uri"`
+		} `json:"textDocument"`
+		Position Position `json:"position"`
+	}
+	if err := json.Unmarshal(msg.Params, &params); err != nil {
+		return s.conn.ReplyError(msg.ID, -32602, "invalid params")
+	}
+	snapshot, ok := s.documents.Snapshot(params.TextDocument.URI)
+	if !ok {
+		return s.conn.Reply(msg.ID, nil)
+	}
+	hover, ok := buildHover(snapshot, params.Position)
+	if !ok {
+		return s.conn.Reply(msg.ID, nil)
+	}
+	return s.conn.Reply(msg.ID, hover)
 }
 
 func (s *Server) handleDocumentSymbol(msg requestMessage) error {
-	type documentSymbolParams struct {
+	var params struct {
 		TextDocument struct {
 			URI string `json:"uri"`
 		} `json:"textDocument"`
 	}
-	var params documentSymbolParams
 	if err := json.Unmarshal(msg.Params, &params); err != nil {
-		return s.replyError(msg.ID, -32602, "invalid params")
+		return s.conn.ReplyError(msg.ID, -32602, "invalid params")
 	}
-	text := s.lookupDocument(params.TextDocument.URI)
-	if text == "" {
-		return s.reply(msg.ID, []DocumentSymbol{})
+	snapshot, ok := s.documents.Snapshot(params.TextDocument.URI)
+	if !ok || snapshot.Symbols == nil {
+		return s.conn.Reply(msg.ID, []DocumentSymbol{})
 	}
-	symbols := documentSymbols(text)
-	return s.reply(msg.ID, symbols)
+	return s.conn.Reply(msg.ID, snapshot.Symbols.DocumentSymbols)
 }
 
 func (s *Server) handleWorkspaceSymbol(msg requestMessage) error {
-	type workspaceSymbolParams struct {
+	var params struct {
 		Query string `json:"query"`
 	}
-	var params workspaceSymbolParams
 	if err := json.Unmarshal(msg.Params, &params); err != nil {
-		return s.replyError(msg.ID, -32602, "invalid params")
+		return s.conn.ReplyError(msg.ID, -32602, "invalid params")
 	}
-	s.mu.Lock()
-	docs := make(map[string]*document, len(s.documents))
-	for uri, doc := range s.documents {
-		docs[uri] = &document{Text: doc.Text, Version: doc.Version}
-	}
-	s.mu.Unlock()
-	symbols := workspaceSymbols(docs, params.Query)
-	return s.reply(msg.ID, symbols)
+	infos := s.documents.WorkspaceSymbols(params.Query)
+	return s.conn.Reply(msg.ID, infos)
 }
 
 func (s *Server) handleDocumentFormatting(msg requestMessage) error {
-	type formattingParams struct {
+	var params struct {
 		TextDocument struct {
 			URI string `json:"uri"`
 		} `json:"textDocument"`
 	}
-	var params formattingParams
 	if err := json.Unmarshal(msg.Params, &params); err != nil {
-		return s.replyError(msg.ID, -32602, "invalid params")
+		return s.conn.ReplyError(msg.ID, -32602, "invalid params")
 	}
-	uri := params.TextDocument.URI
-	text := s.lookupDocument(uri)
-	formatted, err := format.Source(text)
+	snapshot, ok := s.documents.Snapshot(params.TextDocument.URI)
+	if !ok {
+		return s.conn.Reply(msg.ID, []TextEdit{})
+	}
+	formatted, err := format.Source(snapshot.Text)
 	if err != nil {
-		return s.replyError(msg.ID, -32603, err.Error())
+		return s.conn.ReplyError(msg.ID, -32603, err.Error())
 	}
-	if formatted == text {
-		return s.reply(msg.ID, []TextEdit{})
+	if formatted == snapshot.Text {
+		return s.conn.Reply(msg.ID, []TextEdit{})
 	}
-	edit := TextEdit{Range: fullDocumentRange(text), NewText: formatted}
-	s.mu.Lock()
-	if doc, ok := s.documents[uri]; ok {
-		doc.Text = formatted
-	}
-	s.mu.Unlock()
-	return s.reply(msg.ID, []TextEdit{edit})
+	edit := TextEdit{Range: fullDocumentRange(snapshot.Text), NewText: formatted}
+	return s.conn.Reply(msg.ID, []TextEdit{edit})
 }
 
-func (s *Server) lookupDocument(uri string) string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if doc, ok := s.documents[uri]; ok && doc != nil {
-		return doc.Text
+func (s *Server) handleSemanticTokensFull(msg requestMessage) error {
+	var params struct {
+		TextDocument struct {
+			URI string `json:"uri"`
+		} `json:"textDocument"`
 	}
-	return ""
+	if err := json.Unmarshal(msg.Params, &params); err != nil {
+		return s.conn.ReplyError(msg.ID, -32602, "invalid params")
+	}
+	snapshot, ok := s.documents.Snapshot(params.TextDocument.URI)
+	if !ok {
+		return s.conn.Reply(msg.ID, SemanticTokens{})
+	}
+	tokens := s.highlighter.Encode(snapshot)
+	return s.conn.Reply(msg.ID, tokens)
+}
+
+func (s *Server) handleSemanticTokensRange(msg requestMessage) error {
+	var params struct {
+		TextDocument struct {
+			URI string `json:"uri"`
+		} `json:"textDocument"`
+		Range Range `json:"range"`
+	}
+	if err := json.Unmarshal(msg.Params, &params); err != nil {
+		return s.conn.ReplyError(msg.ID, -32602, "invalid params")
+	}
+	snapshot, ok := s.documents.Snapshot(params.TextDocument.URI)
+	if !ok {
+		return s.conn.Reply(msg.ID, SemanticTokens{})
+	}
+	tokens := s.highlighter.EncodeRange(snapshot, params.Range)
+	return s.conn.Reply(msg.ID, tokens)
 }
 
 func (s *Server) publishDiagnostics(uri string, diagnostics []Diagnostic) {
-	notification := map[string]interface{}{
-		"jsonrpc": jsonrpcVersion,
-		"method":  "textDocument/publishDiagnostics",
-		"params": map[string]interface{}{
-			"uri":         uri,
-			"diagnostics": diagnostics,
-		},
+	params := map[string]any{
+		"uri":         uri,
+		"diagnostics": diagnostics,
 	}
-	_ = s.writeMessage(notification)
+	_ = s.conn.Notify("textDocument/publishDiagnostics", params)
 }
 
-func (s *Server) reply(id json.RawMessage, result interface{}) error {
-	resp := responseMessage{JSONRPC: jsonrpcVersion, ID: id, Result: result}
-	return s.writeMessage(resp)
-}
-
-func (s *Server) replyError(id json.RawMessage, code int, message string) error {
-	resp := responseMessage{JSONRPC: jsonrpcVersion, ID: id, Error: &responseError{Code: code, Message: message}}
-	return s.writeMessage(resp)
-}
-
-func (s *Server) writeMessage(v interface{}) error {
-	data, err := json.Marshal(v)
-	if err != nil {
-		return err
+func buildHover(doc *DocumentSnapshot, pos Position) (Hover, bool) {
+	name, rng := identifierAt(doc.Text, pos)
+	if name == "" {
+		return Hover{}, false
 	}
-	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(data))
-	if _, err := s.writer.WriteString(header); err != nil {
-		return err
-	}
-	if _, err := s.writer.Write(data); err != nil {
-		return err
-	}
-	return s.writer.Flush()
-}
-
-func (s *Server) readMessage() ([]byte, error) {
-	headers := make(map[string]string)
-	for {
-		line, err := s.reader.ReadString('\n')
-		if err != nil {
-			return nil, err
+	var content strings.Builder
+	if doc.Symbols != nil {
+		for _, fn := range doc.Symbols.FunctionSymbols {
+			if fn.Name == name {
+				content.WriteString(fmt.Sprintf("**function** `%s`\n\n", fn.Detail))
+				return Hover{Contents: MarkupContent{Kind: "markdown", Value: content.String()}, Range: &rng}, true
+			}
 		}
-		if line == "\r\n" {
-			break
+		for _, param := range collectParameters(doc.Symbols) {
+			if param.Name == name {
+				content.WriteString(fmt.Sprintf("**parameter** `%s`", param.Name))
+				return Hover{Contents: MarkupContent{Kind: "markdown", Value: content.String()}, Range: &rng}, true
+			}
 		}
-		parts := strings.SplitN(line, ":", 2)
-		if len(parts) != 2 {
-			continue
+		for _, variable := range doc.Symbols.VariableSymbols {
+			if variable.Name == name {
+				detail := "immutable"
+				if variable.Mutable {
+					detail = "mutable"
+				}
+				content.WriteString(fmt.Sprintf("**variable** `%s` (%s)", variable.Name, detail))
+				return Hover{Contents: MarkupContent{Kind: "markdown", Value: content.String()}, Range: &rng}, true
+			}
 		}
-		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(strings.TrimSuffix(parts[1], "\r\n"))
-		headers[strings.ToLower(key)] = value
+		for _, t := range doc.Symbols.TypeSymbols {
+			if t.Name == name {
+				content.WriteString(fmt.Sprintf("**%s** `%s`", strings.ToLower(t.Detail), t.Name))
+				return Hover{Contents: MarkupContent{Kind: "markdown", Value: content.String()}, Range: &rng}, true
+			}
+		}
 	}
+	if content.Len() == 0 {
+		content.WriteString(fmt.Sprintf("`%s`", name))
+	}
+	return Hover{Contents: MarkupContent{Kind: "markdown", Value: content.String()}, Range: &rng}, true
+}
 
-	lengthStr, ok := headers[strings.ToLower("Content-Length")]
-	if !ok {
-		return nil, fmt.Errorf("missing Content-Length header")
+func collectParameters(index *SymbolIndex) []ParameterSymbol {
+	params := make([]ParameterSymbol, 0)
+	if index == nil {
+		return params
 	}
-	length, err := strconv.Atoi(lengthStr)
-	if err != nil {
-		return nil, err
+	for _, fn := range index.FunctionSymbols {
+		params = append(params, fn.Params...)
 	}
-	if length == 0 {
-		return []byte("{}"), nil
-	}
-	payload := make([]byte, length)
-	if _, err := io.ReadFull(s.reader, payload); err != nil {
-		return nil, err
-	}
-	return payload, nil
+	return params
 }
 
 func fullDocumentRange(text string) Range {
 	lines := strings.Split(text, "\n")
 	if len(lines) == 0 {
-		return Range{Start: Position{}, End: Position{}}
+		return Range{Start: Position{Line: 0, Character: 0}, End: Position{Line: 0, Character: 0}}
 	}
 	endLine := len(lines) - 1
 	endChar := len([]rune(lines[endLine]))

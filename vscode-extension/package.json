@@ -19,7 +19,7 @@
     "onLanguage:selene",
     "onCommand:selene.restartLanguageServer"
   ],
-  "main": "./extension.js",
+  "main": "./dist/extension.js",
   "contributes": {
     "languages": [
       {
@@ -70,18 +70,30 @@
     ]
   },
   "scripts": {
-    "lint": "eslint .",
-    "compile": "vsce package --out dist/selene-lang-support.vsix",
-    "package": "npm run clean && node -e \"require('fs').mkdirSync('dist', { recursive: true })\" && npm run compile",
+    "build": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "lint": "eslint src --ext .ts",
+    "test": "mocha -r ts-node/register \"src/test/**/*.test.ts\"",
+    "package": "npm run clean && npm run build && vsce package --out dist/selene-lang-support.vsix",
     "clean": "rimraf dist"
   },
   "devDependencies": {
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.6",
     "@types/node": "^20.11.30",
+    "@types/sinon": "^10.0.20",
     "@types/vscode": "^1.82.0",
+    "@typescript-eslint/eslint-plugin": "^7.12.0",
+    "@typescript-eslint/parser": "^7.12.0",
     "@vscode/test-electron": "^2.3.4",
     "@vscode/vsce": "^2.22.0",
+    "chai": "^4.4.1",
     "eslint": "^8.57.0",
-    "rimraf": "^5.0.5"
+    "mocha": "^10.4.0",
+    "rimraf": "^5.0.5",
+    "sinon": "^17.0.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.1"

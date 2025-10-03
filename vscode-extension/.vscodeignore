@@ -1,7 +1,10 @@
 node_modules/vscode/**
 .vscode/**
 .github/**
-dist/**
 .git/**
 **/*.ts
 **/*.map
+src/test/**
+tsconfig.json
+package-lock.json
+npm-debug.log
