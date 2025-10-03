@@ -5,7 +5,7 @@ letter          = "A".."Z" | "a".."z" | "_" ;
 digit           = "0".."9" ;
 
 number          = digit , { digit } , [ "." , digit , { digit } ] ;
-string_literal  = '"' , { character - '"' } , '"' ;
+string_literal  = '"' , { character - '"' } , '"' | '"""' , { character } , '"""' ;
 format_string   = "f\"" , { character - '"' } , '"' | "f\"\"\"" , { character } , "\"\"\"" ;
 raw_string      = "`" , { character - "`" } , "`" | "r\"" , { character - '"' } , '"'
                 | "r\"\"\"" , { character } , "\"\"\"" ;
@@ -14,7 +14,9 @@ null            = "null" ;
 
 (* ----------------- PROGRAM STRUCTURE ----------------- *)
 
-program         = [ package_decl ] , { module_decl | statement } ;
+program         = [ package_decl ] , { top_level_item } ;
+
+top_level_item  = module_decl | declaration | statement ;
 
 package_decl    = "package" , identifier , [ ";" ] ;
 
@@ -27,78 +29,50 @@ import_decl     = "import" , (
 
 import_path     = identifier , { "." , identifier } | string_literal ;
 
-(* ----------------- STATEMENTS ----------------- *)
+(* ----------------- DECLARATIONS ----------------- *)
 
-statement       = variable_decl
-                | function_decl
-                | extension_decl
-                | class_decl
-                | struct_decl
-                | enum_decl
-                | interface_decl
-                | contract_decl
-                | import_decl
-                | match_stmt
-                | if_stmt
-                | while_stmt
-                | for_stmt
-                | using_stmt
-                | try_stmt
-                | throw_stmt
-                | return_stmt
-                | break_stmt
-                | continue_stmt
-                | condition_stmt
-                | block
-                | expression , ";"
-                ;
+declaration     = variable_decl | function_decl | extension_decl | class_decl
+                | struct_decl | enum_decl | interface_decl | contract_decl | import_decl ;
+
+statement       = declaration | match_stmt | if_stmt | while_stmt | for_stmt | using_stmt
+                | try_stmt | throw_stmt | return_stmt | break_stmt | continue_stmt
+                | condition_stmt | block | expression , ";" ;
 
 block           = "{" , { statement } , "}" ;
 
 variable_decl   = ("let" | "var") , identifier , [ ":" , type ] , "=" , expression , ";" ;
 
-(* ----------------- FUNCTIONS ----------------- *)
+function_decl   = "fn" , identifier , [ type_param_list ] , parameter_clause , [ return_type ]
+                , [ "async" ] , [ contract_block ] , function_body ;
 
-function_decl   = "fn" , identifier , [ type_param_list ] ,
-                  "(" , [ param_list ] , ")" ,
-                  [ ":" , type ] ,
-                  [ "async" ] ,
-                  [ contract_block ] ,
-                  ( block | ("=" | "=>") , expression , [ ";" ] ) ;
+extension_decl  = "ext" , "fn" , type , "." , identifier , [ type_param_list ]
+                , parameter_clause , [ return_type ] , [ "async" ] , [ contract_block ]
+                , function_body ;
 
-extension_decl  = "ext" , "fn" , type , "." , identifier ,
-                  [ type_param_list ] , "(" , [ param_list ] , ")" ,
-                  [ ":" , type ] ,
-                  [ "async" ] ,
-                  [ contract_block ] ,
-                  ( block | ("=" | "=>") , expression , [ ";" ] ) ;
+parameter_clause= "(" , [ param_list ] , ")" ;
+return_type     = ":" , type ;
 
 param_list      = param , { "," , param } ;
 param           = identifier , ":" , type ;
 
 type_param_list = "<" , identifier , { "," , identifier } , ">" ;
 
+function_body   = block | ( "=" | "=>" ) , expression , [ ";" ] ;
+
 contract_block  = "contract" , "{" , { contract_clause } , "}" ;
 contract_clause = "returns" , "(" , [ expression ] , ")" , "=>" , expression , ";" ;
 
-(* ----------------- TYPE ANNOTATIONS ----------------- *)
-
 type            = identifier , [ "<" , type , { "," , type } , ">" ] , [ "?" ] ;
 
-(* ----------------- STRUCTURED DECLARATIONS ----------------- *)
+class_decl      = "class" , identifier , parameter_clause , [ ":" , identifier ] , [ block ] ;
+struct_decl     = "struct" , identifier , parameter_clause , [ block ] ;
 
-class_decl      = "class" , identifier , "(" , [ param_list ] , ")" ,
-                  [ ":" , identifier ] , [ block ] ;
-
-struct_decl     = "struct" , identifier , "(" , [ param_list ] , ")" , [ block ] ;
-
-enum_decl       = "enum" , identifier , [ type_param_list ] ,
-                  "{" , { enum_case } , "}" ;
+enum_decl       = "enum" , identifier , [ type_param_list ] , "{" , { enum_case } , "}" ;
 
 enum_case       = identifier , [ "(" , [ param_list ] , ")" ] , ";" ;
 
 interface_decl  = "interface" , identifier , "{" , { interface_member } , "}" ;
-interface_member= "fn" , identifier , "(" , [ param_list ] , ")" , [ ":" , type ] , ";" ;
+interface_member= "fn" , identifier , parameter_clause , [ return_type ] , ";" ;
 
 contract_decl   = "contract" , identifier , block ;
 
@@ -143,7 +117,8 @@ pair_pattern    = ( string_literal | identifier ) , ":" , pattern ;
 
 expression      = assignment ;
 
-assignment      = conditional , [ ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" ) , expression ] ;
+assignment      = conditional , [ assignment_operator , expression ] ;
+assignment_operator = "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
 
 conditional     = logical_or , [ "?:" , expression ] ;
 
@@ -158,21 +133,14 @@ multiplicative  = unary , { ("*" | "/" | "%") , unary } ;
 
 unary           = ( "!" | "-" | "&" | "*" ) , unary | postfix ;
 
-postfix         = primary , {
-                    "." , identifier
-                  | "[" , expression , "]"
-                  | "?." , identifier
-                  | "!!"
-                  | "(" , [ argument_list ] , ")"
-                 } ;
+postfix         = primary , { postfix_part } ;
+postfix_part    = "." , identifier | "?." , identifier | "[" , expression , "]"
+                | "!!" | "(" , [ argument_list ] , ")" ;
 
 argument_list   = expression , { "," , expression } ;
 
 primary         = number | string_literal | format_string | raw_string | boolean | "null"
-                | identifier
-                | array_literal
-                | object_literal
-                | await_expr
+                | identifier | array_literal | object_literal | await_expr
                 | "(" , expression , ")" ;
 
 array_literal   = "[" , [ expression , { "," , expression } ] , "]" ;
