@@ -1,6 +1,6 @@
-<!-- <p align="center">
-  <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNTFlNTh5amJ4aHZlYTUzajNjbHd2Nzl5d2c2dmVmeW1sb2xob2VhZyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/l3q2K5jinAlChoCLS/giphy.gif" width="160" alt="Moon orbit animation" />
-</p> -->
+<p align="center">
+  <img src="https://github.com/cybellereaper/selenelang/blob/main/assets/logo-design-1.png" width="160" alt="Moon orbit animation" />
+</p> 
 
 <h1 align="center">Selene Language Toolkit</h1>
 
