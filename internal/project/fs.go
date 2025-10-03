@@ -1,6 +1,7 @@
 package project
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -103,11 +104,16 @@ func HashDirectory(root string) (string, error) {
 			f.Close()
 			return "", err
 		}
-		if _, err := io.Copy(hasher, f); err != nil {
-			f.Close()
+		data, err := io.ReadAll(f)
+		f.Close()
+		if err != nil {
 			return "", err
 		}
-		f.Close()
+		normalized := bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
+		normalized = bytes.ReplaceAll(normalized, []byte("\r"), []byte("\n"))
+		if _, err := hasher.Write(normalized); err != nil {
+			return "", err
+		}
 	}
 	return "sha256-" + hex.EncodeToString(hasher.Sum(nil)), nil
 }
