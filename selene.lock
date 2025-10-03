@@ -1,0 +1,6 @@
+[[dependency]]
+module = "github.com/selene-lang/richmath"
+version = "v1.0.0"
+checksum = "sha256-42a29e0981b61735c644c8ab9947451b980ff3cc01217fb943a84a2f93c33079"
+vendor = "vendor/github.com/selene-lang/richmath@v1.0.0"
+

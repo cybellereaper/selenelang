@@ -1,0 +1,26 @@
+package examples
+
+let counter = 41;
+let handle = &counter;
+
+fn bump(value: Pointer) {
+    *value += 1;
+}
+
+bump(handle);
+print("after bump:", counter);
+
+let alias = handle;
+*alias += 10;
+print("after alias:", counter);
+
+fn swap(a: Pointer, b: Pointer) {
+    let temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+let first = 5;
+let second = 12;
+swap(&first, &second);
+print("swapped:", first, second);

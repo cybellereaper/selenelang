@@ -1,0 +1,31 @@
+// Demonstrates function contracts and reusable contract declarations.
+
+contract validators {
+    fn withinRange(value: Number, min: Number, max: Number): Boolean {
+        return value >= min && value <= max;
+    }
+}
+
+fn clamp(value: Number, min: Number, max: Number): Number
+    contract {
+        returns(result) => result >= min;
+        returns(result) => result <= max;
+    }
+{
+    if value < min {
+        return min;
+    }
+    if value > max {
+        return max;
+    }
+    return value;
+}
+
+let values = [ -5, 3, 42 ];
+for (let i = 0; i < values.length; i = i + 1) {
+    let original = values[i];
+    let clamped = clamp(original, 0, 10);
+    print("clamp(" + original + ") => " + clamped);
+    let ok = validators.withinRange(clamped, 0, 10);
+    print("within range? => " + ok);
+}

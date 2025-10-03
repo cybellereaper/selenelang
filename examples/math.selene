@@ -1,0 +1,15 @@
+// Demonstrates Selene arithmetic helpers and reusable functions.
+let pi: Number = 314159 / 100000;
+
+fn circleArea(radius: Number): Number => radius * radius * pi;
+fn circumference(radius: Number): Number => 2 * pi * radius;
+
+fn report(name: String, radius: Number) {
+    let area = circleArea(radius);
+    let edge = circumference(radius);
+    print(name + " => area=" + area + ", circumference=" + edge);
+}
+
+report("small", 2);
+report("medium", 5);
+report("large", 9);
