@@ -1,3 +1,4 @@
+// Package toolchain provides helpers that replicate the Selene CLI pipeline.
 package toolchain
 
 import (

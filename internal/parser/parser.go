@@ -1,3 +1,4 @@
+// Package parser turns Selene tokens into abstract syntax trees.
 package parser
 
 import (
@@ -14,11 +15,13 @@ type (
 	infixParseFn  func(ast.Expression) ast.Expression
 )
 
+// ParseError describes a failure encountered during parsing.
 type ParseError struct {
 	Message  string
 	Position token.Position
 }
 
+// Parser incrementally consumes tokens and produces AST nodes.
 type Parser struct {
 	l *lexer.Lexer
 
@@ -77,6 +80,7 @@ var precedences = map[token.Type]int{
 	token.NON_NULL:       CALL,
 }
 
+// New constructs a parser bound to the provided lexer.
 func New(l *lexer.Lexer) *Parser {
 	p := &Parser{
 		l:              l,
@@ -136,10 +140,12 @@ func New(l *lexer.Lexer) *Parser {
 	return p
 }
 
+// Errors reports any syntax errors collected during parsing.
 func (p *Parser) Errors() []string {
 	return p.errors
 }
 
+// ErrorDetails returns structured parse errors including positions.
 func (p *Parser) ErrorDetails() []ParseError {
 	return p.detailedError
 }
@@ -162,6 +168,7 @@ func (p *Parser) registerInfix(t token.Type, fn infixParseFn) {
 	p.infixParseFns[t] = fn
 }
 
+// ParseProgram parses the entire input into a program AST.
 func (p *Parser) ParseProgram() *ast.Program {
 	program := &ast.Program{}
 	if p.curToken.Type != token.EOF {

@@ -1,3 +1,4 @@
+// Package token defines lexical token types and positions for Selene.
 package token
 
 import "fmt"
@@ -20,6 +21,7 @@ type Position struct {
 	Column int
 }
 
+// String returns the human-readable line and column for the position.
 func (p Position) String() string {
 	return fmt.Sprintf("%d:%d", p.Line, p.Column)
 }

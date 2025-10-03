@@ -7,6 +7,7 @@ import (
 	"selenelang/internal/token"
 )
 
+// Highlighter produces semantic tokens for editors.
 type Highlighter struct {
 	tokenTypes      []string
 	tokenTypeLookup map[string]int
@@ -20,6 +21,7 @@ type semanticToken struct {
 	modifiers int
 }
 
+// NewHighlighter constructs a semantic token highlighter with Selene token types.
 func NewHighlighter() *Highlighter {
 	types := []string{
 		"namespace",
@@ -47,10 +49,12 @@ func NewHighlighter() *Highlighter {
 	return &Highlighter{tokenTypes: types, tokenTypeLookup: lookup}
 }
 
+// Legend returns the supported semantic token types and modifiers.
 func (h *Highlighter) Legend() (tokenTypes []string, tokenModifiers []string) {
 	return append([]string(nil), h.tokenTypes...), []string{}
 }
 
+// Encode builds semantic tokens for an entire document snapshot.
 func (h *Highlighter) Encode(doc *DocumentSnapshot) SemanticTokens {
 	if doc == nil || doc.Symbols == nil {
 		return SemanticTokens{}
@@ -59,6 +63,7 @@ func (h *Highlighter) Encode(doc *DocumentSnapshot) SemanticTokens {
 	return encodeSemanticSegments(segments)
 }
 
+// EncodeRange builds semantic tokens covering a specific range.
 func (h *Highlighter) EncodeRange(doc *DocumentSnapshot, rng Range) SemanticTokens {
 	if doc == nil || doc.Symbols == nil {
 		return SemanticTokens{}

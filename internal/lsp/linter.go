@@ -9,12 +9,15 @@ import (
 	"selenelang/internal/token"
 )
 
+// Linter performs lightweight static checks on documents.
 type Linter struct{}
 
+// NewLinter constructs a linter with default checks enabled.
 func NewLinter() *Linter {
 	return &Linter{}
 }
 
+// Lint executes the linter against the provided program, returning diagnostics.
 func (l *Linter) Lint(text string, program *ast.Program, tokens []token.Token, symbols *SymbolIndex) []Diagnostic {
 	diagnostics := make([]Diagnostic, 0)
 	diagnostics = append(diagnostics, l.trailingWhitespace(text)...)

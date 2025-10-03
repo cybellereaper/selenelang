@@ -1,3 +1,4 @@
+// Package jit provides a simple Selene just-in-time compiler.
 package jit
 
 import (

@@ -1,3 +1,4 @@
+// Package examples discovers and executes Selene example scripts.
 package examples
 
 import (

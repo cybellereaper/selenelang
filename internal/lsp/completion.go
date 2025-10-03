@@ -6,11 +6,13 @@ import (
 	"strings"
 )
 
+// Completer provides completion suggestions for Selene source.
 type Completer struct {
 	keywordItems []CompletionItem
 	builtinItems []CompletionItem
 }
 
+// NewCompleter builds a completer with keyword and builtin suggestions.
 func NewCompleter() *Completer {
 	keywords := []CompletionItem{
 		{Label: "let", Kind: completionItemKeyword, Detail: "keyword"},
@@ -56,6 +58,7 @@ func NewCompleter() *Completer {
 	return &Completer{keywordItems: keywords, builtinItems: builtins}
 }
 
+// Completion returns completion candidates for the provided snapshot and position.
 func (c *Completer) Completion(doc *DocumentSnapshot, pos Position) CompletionList {
 	if doc == nil || doc.Symbols == nil {
 		return CompletionList{IsIncomplete: false, Items: nil}
