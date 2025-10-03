@@ -3,6 +3,7 @@ package lsp
 import (
 	"fmt"
 
+	"selenelang/internal/ast"
 	"selenelang/internal/lexer"
 	"selenelang/internal/parser"
 	"selenelang/internal/token"
@@ -10,64 +11,74 @@ import (
 
 const diagnosticSource = "selene"
 
-func analyzeDocument(source string) []Diagnostic {
-	diags := make([]Diagnostic, 0)
+type AnalysisResult struct {
+	Tokens      []token.Token
+	Program     *ast.Program
+	Diagnostics []Diagnostic
+	Symbols     *SymbolIndex
+}
 
+type Analyzer struct {
+	linter *Linter
+}
+
+func NewAnalyzer(linter *Linter) *Analyzer {
+	if linter == nil {
+		linter = NewLinter()
+	}
+	return &Analyzer{linter: linter}
+}
+
+func (a *Analyzer) Analyze(text string) AnalysisResult {
+	tokens, lexDiagnostics := lexDocument(text)
+	program, parseDiagnostics := parseDocument(text)
+	symbols := buildSymbolIndex(program, tokens)
+
+	diagnostics := append([]Diagnostic{}, lexDiagnostics...)
+	diagnostics = append(diagnostics, parseDiagnostics...)
+	diagnostics = append(diagnostics, a.linter.Lint(text, program, tokens, symbols)...)
+
+	return AnalysisResult{
+		Tokens:      tokens,
+		Program:     program,
+		Diagnostics: diagnostics,
+		Symbols:     symbols,
+	}
+}
+
+func lexDocument(source string) ([]token.Token, []Diagnostic) {
 	lex := lexer.New(source)
+	tokens := make([]token.Token, 0, len(source)/4)
+	diagnostics := make([]Diagnostic, 0)
 	for {
 		tok := lex.NextToken()
+		tokens = append(tokens, tok)
 		if tok.Type == token.ILLEGAL {
-			message := fmt.Sprintf("illegal token %q", tok.Literal)
-			diags = append(diags, Diagnostic{
+			diagnostics = append(diagnostics, Diagnostic{
 				Range:    rangeFromToken(tok),
 				Severity: severityError,
 				Source:   diagnosticSource,
-				Message:  message,
+				Message:  fmt.Sprintf("illegal token %q", tok.Literal),
 			})
 		}
 		if tok.Type == token.EOF {
 			break
 		}
 	}
+	return tokens, diagnostics
+}
 
+func parseDocument(source string) (*ast.Program, []Diagnostic) {
 	p := parser.New(lexer.New(source))
-	_ = p.ParseProgram()
+	program := p.ParseProgram()
+	diagnostics := make([]Diagnostic, 0, len(p.Errors()))
 	for _, perr := range p.ErrorDetails() {
-		diags = append(diags, Diagnostic{
-			Range:    rangeFromPosition(perr.Position),
+		diagnostics = append(diagnostics, Diagnostic{
+			Range:    rangeFromPositions(perr.Position, perr.Position),
 			Severity: severityError,
 			Source:   diagnosticSource,
 			Message:  perr.Message,
 		})
 	}
-
-	return diags
-}
-
-func rangeFromToken(tok token.Token) Range {
-	start := positionFromTokenPos(tok.Pos)
-	end := positionFromTokenPos(tok.End)
-	if end.Line == start.Line && end.Character <= start.Character {
-		end.Character = start.Character + 1
-	}
-	return Range{Start: start, End: end}
-}
-
-func rangeFromPosition(pos token.Position) Range {
-	start := positionFromTokenPos(pos)
-	end := start
-	end.Character = start.Character + 1
-	return Range{Start: start, End: end}
-}
-
-func positionFromTokenPos(pos token.Position) Position {
-	line := pos.Line - 1
-	if line < 0 {
-		line = 0
-	}
-	character := pos.Column - 1
-	if character < 0 {
-		character = 0
-	}
-	return Position{Line: line, Character: character}
+	return program, diagnostics
 }

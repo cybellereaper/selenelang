@@ -469,11 +469,27 @@ func depsCommand(args []string) error {
 }
 
 func lspCommand(args []string) error {
-	if len(args) > 0 {
-		return errors.New("lsp does not accept positional arguments")
+	if err := validateLSPArgs(args); err != nil {
+		return err
 	}
 	server := lsp.NewServer(os.Stdin, os.Stdout)
 	return server.Run()
+}
+
+func validateLSPArgs(args []string) error {
+	fs := flag.NewFlagSet("lsp", flag.ContinueOnError)
+	fs.SetOutput(io.Discard)
+	useStdio := fs.Bool("stdio", true, "communicate with the language client over stdio")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	if fs.NArg() > 0 {
+		return errors.New("lsp does not accept positional arguments")
+	}
+	if !*useStdio {
+		return errors.New("selene language server requires stdio transport")
+	}
+	return nil
 }
 
 func depsAdd(args []string) error {

@@ -41,9 +41,36 @@ type CompletionList struct {
 }
 
 const (
-	completionItemKeyword  = 14
-	completionItemFunction = 3
-	insertTextPlainText    = 1
+	completionItemText          = 1
+	completionItemMethod        = 2
+	completionItemFunction      = 3
+	completionItemConstructor   = 4
+	completionItemField         = 5
+	completionItemVariable      = 6
+	completionItemClass         = 7
+	completionItemInterface     = 8
+	completionItemModule        = 9
+	completionItemProperty      = 10
+	completionItemUnit          = 11
+	completionItemValue         = 12
+	completionItemEnum          = 13
+	completionItemKeyword       = 14
+	completionItemSnippet       = 15
+	completionItemColor         = 16
+	completionItemFile          = 17
+	completionItemReference     = 18
+	completionItemFolder        = 19
+	completionItemEnumMember    = 20
+	completionItemConstant      = 21
+	completionItemStruct        = 22
+	completionItemEvent         = 23
+	completionItemOperator      = 24
+	completionItemTypeParameter = 25
+)
+
+const (
+	insertTextPlainText = 1
+	insertTextSnippet   = 2
 )
 
 // TextEdit represents a change applied to a text document.
@@ -74,6 +101,23 @@ type SymbolInformation struct {
 	Kind     int      `json:"kind"`
 	Location Location `json:"location"`
 	Detail   string   `json:"detail,omitempty"`
+}
+
+// MarkupContent represents formatted hover text.
+type MarkupContent struct {
+	Kind  string `json:"kind"`
+	Value string `json:"value"`
+}
+
+// Hover contains hover information for a text position.
+type Hover struct {
+	Contents MarkupContent `json:"contents"`
+	Range    *Range        `json:"range,omitempty"`
+}
+
+// SemanticTokens represents encoded semantic token data.
+type SemanticTokens struct {
+	Data []uint32 `json:"data"`
 }
 
 const (
