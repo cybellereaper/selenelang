@@ -6,8 +6,8 @@ This Visual Studio Code extension provides an integrated experience for the Sele
 
 - Syntax highlighting for `.selene` sources powered by a TextMate grammar tuned to Selene keywords, string forms, and operators.
 - Automatic bracket/quote pairing and standard comment toggles.
-- Language Server Protocol (LSP) integration that launches the official Selene CLI to deliver diagnostics, completions, document formatting, and symbol indexing.
-- A **Selene: Restart Language Server** command to quickly reload the backend after changing toolchain binaries or configuration.
+- Language Server Protocol (LSP) integration that launches the official Selene CLI to deliver diagnostics, completions, document formatting, semantic tokens, and symbol indexing.
+- A persistent status bar item that surfaces the language server lifecycle (starting, ready, failed) along with a **Selene: Restart Language Server** command to quickly reload the backend after changing toolchain binaries or configuration.
 
 ## Requirements
 
@@ -41,6 +41,7 @@ The repository ships with a GitHub Actions workflow (`.github/workflows/extensio
 
 1. Run `npm install` inside the `vscode-extension/` directory to fetch dependencies.
 2. Open the folder in VS Code and run the **Launch Extension** configuration to debug.
-3. The extension entrypoint is `extension.js`, which wires the VS Code client to the Selene language server.
+3. The extension source lives under `src/` and is authored in TypeScript. The compiled output in `dist/` is the entrypoint that VS Code executes.
+4. Run `npm run build` to emit the compiled extension, `npm run test` to execute the unit suite, and `npm run lint` to enforce code quality before committing changes.
 
-The extension is authored in plain JavaScript to minimize build tooling—no bundlers or transpilers are required. The additional packaging dependencies only run when you invoke the scripts above.
+The development workflow intentionally mirrors production: every command runs through the same TypeScript compiler and Mocha test harness used in CI, so extension behavior stays consistent whether you are iterating locally or packaging a release.
