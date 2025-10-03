@@ -1,0 +1,12 @@
+// examples/hello.selene
+module hello {
+    import std.io.console as console;
+
+    let greeting: String = "Hello";
+
+    fn greet(name: String): String => greeting + ", " + name;
+
+    fn main() {
+        console.print(greet("Selene"));
+    }
+}
