@@ -23,7 +23,7 @@ import (
 )
 
 func main() {
-    script, err := os.ReadFile("examples/hello.selene")
+    script, err := os.ReadFile("examples/fundamentals/hello.selene")
     if err != nil {
         panic(err)
     }

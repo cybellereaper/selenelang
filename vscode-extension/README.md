@@ -1,55 +1,55 @@
----
-
-⚠️ **UNSTABLE FEATURE – WIP**  
-This section is under active development. APIs and behavior may change without notice.  
-Do not rely on this in production.
-
----
+<p align="center">
+  <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXA5cXA2ZXB3NmR6NjY0cHh6NnFrYWFoMnRxM2VpdTNmMGk2ZGszbiZlcD12MV9naWZzX3NlYXJjaCZjdD1n/1BdIP9eT0C8kc/giphy.gif" width="200" alt="VS Code neon animation" />
+</p>
 
 # Selene Language Support for VS Code
 
-This Visual Studio Code extension provides an integrated experience for the Selene programming language. It bundles syntax highlighting, editor configuration, and a bridge to the `selene lsp` language server so scripts enjoy rich diagnostics and completions.
+> ⚠️ **UNSTABLE FEATURE – WIP** – APIs and behavior may change without notice. Do not rely on this in production.
 
-## Features
+The Selene VS Code extension ships alongside the reorganized toolkit so you can code against the moonlit runtime with style. It bundles syntax highlighting, language server wiring, and packaging helpers to make editing `.selene` files feel otherworldly.
 
-- Syntax highlighting for `.selene` sources powered by a TextMate grammar tuned to Selene keywords, string forms, and operators.
-- Automatic bracket/quote pairing and standard comment toggles.
-- Language Server Protocol (LSP) integration that launches the official Selene CLI to deliver diagnostics, completions, document formatting, semantic tokens, and symbol indexing.
-- A persistent status bar item that surfaces the language server lifecycle (starting, ready, failed) along with a **Selene: Restart Language Server** command to quickly reload the backend after changing toolchain binaries or configuration.
+## Feature stardust
 
-## Requirements
+- **🎨 Syntax highlighting** powered by a TextMate grammar tuned to Selene keywords, string forms, and operators.
+- **🧠 Smart language server** integration that launches `selene lsp` for diagnostics, completions, formatting, semantic tokens, and symbol indexing.
+- **🔁 One-click restarts** via a persistent status bar item and the **Selene: Restart Language Server** command.
+- **🌌 Cozy defaults** for bracket/quote pairing, comment toggles, and formatting so your editing orbit stays smooth.
+
+## Prerequisites
 
 - Install the Selene CLI (`go install ./cmd/selene`) so the extension can spawn `selene lsp`.
-- Ensure the CLI is discoverable on your system `PATH`, or update the `Selene › Language Server Path` setting to reference an absolute path.
+- Ensure the CLI lives on your system `PATH`, or update the **Selene › Language Server Path** setting to reference an absolute location.
 
-## Extension Settings
+## Extension settings
 
-The extension exposes a few settings under **Selene**:
+All settings live under the **Selene** namespace:
 
-- `selene.languageServerPath`: Command used to start the language server (`selene` by default).
-- `selene.languageServerArgs`: Arguments passed to the command (defaults to `["lsp"]`).
-- `selene.languageServerEnv`: Additional environment variables merged into the server process.
+| Setting | Purpose |
+| --- | --- |
+| `selene.languageServerPath` | Command used to start the language server (`selene` by default). |
+| `selene.languageServerArgs` | Arguments passed to the command (defaults to `["lsp"]`). |
+| `selene.languageServerEnv` | Additional environment variables merged into the server process. |
 
-## Packaging
-
-Run the packaging scripts to build a distributable `.vsix` archive:
+## Packaging & release flow
 
 ```bash
 npm install
 npm run package
 ```
 
-The command produces `dist/selene-lang-support.vsix`, which you can install locally with `code --install-extension dist/selene-lang-support.vsix` or attach to a GitHub Release.
+The command produces `dist/selene-lang-support.vsix`. Install it locally with:
 
-### Automated releases
+```bash
+code --install-extension dist/selene-lang-support.vsix
+```
 
-The repository ships with a GitHub Actions workflow (`.github/workflows/extension-release.yml`) that runs the same packaging command on demand or whenever you push an `extension-v*` tag. It uploads the `.vsix` as both a workflow artifact and a release asset so the extension is always available from the **Releases** page.
+A GitHub Actions workflow (`.github/workflows/extension-release.yml`) mirrors the same packaging command whenever you push an `extension-v*` tag. It uploads the `.vsix` as both a workflow artifact and a release asset so the extension is always available from the **Releases** page.
 
-## Development
+## Development loop
 
-1. Run `npm install` inside the `vscode-extension/` directory to fetch dependencies.
-2. Open the folder in VS Code and run the **Launch Extension** configuration to debug.
-3. The extension source lives under `src/` and is authored in TypeScript. The compiled output in `dist/` is the entrypoint that VS Code executes.
-4. Run `npm run build` to emit the compiled extension, `npm run test` to execute the unit suite, and `npm run lint` to enforce code quality before committing changes.
+1. Run `npm install` inside `vscode-extension/` to fetch dependencies.
+2. Open the folder in VS Code and start the **Launch Extension** configuration to debug in a dedicated Extension Development Host.
+3. Source lives under `src/` in TypeScript. `npm run build` emits the compiled output into `dist/`.
+4. Run `npm run lint` and `npm run test` before committing to keep the neon glow consistent.
 
-The development workflow intentionally mirrors production: every command runs through the same TypeScript compiler and Mocha test harness used in CI, so extension behavior stays consistent whether you are iterating locally or packaging a release.
+> 🛰️ Bonus: the main repository now exposes the curated examples under `examples/` → `fundamentals`, `runtime`, `types-patterns`, and more. Point the extension at those folders to explore real code while testing new features.

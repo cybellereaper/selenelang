@@ -1,53 +1,61 @@
-<p align="left">
-  <img src="https://github.com/cybellereaper/selenelang/blob/main/assets/image.png" width="98" alt="Selene logo" />
+<p align="center">
+  <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNTFlNTh5amJ4aHZlYTUzajNjbHd2Nzl5d2c2dmVmeW1sb2xob2VhZyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/l3q2K5jinAlChoCLS/giphy.gif" width="160" alt="Moon orbit animation" />
 </p>
 
-# Selene Language Toolkit
+<h1 align="center">Selene Language Toolkit</h1>
 
-[![Go Tests](https://github.com/cybellereaper/selenelang/actions/workflows/go-tests.yml/badge.svg)](https://github.com/cybellereaper/selenelang/actions/workflows/go-tests.yml)
-[![Go Reference](https://pkg.go.dev/badge/github.com/cybellereaper/selenelang.svg)](https://pkg.go.dev/github.com/cybellereaper/selenelang)
+<p align="center">
+  <a href="https://github.com/cybellereaper/selenelang/actions/workflows/go-tests.yml"><img src="https://github.com/cybellereaper/selenelang/actions/workflows/go-tests.yml/badge.svg" alt="Go Tests"></a>
+  <a href="https://pkg.go.dev/github.com/cybellereaper/selenelang"><img src="https://pkg.go.dev/badge/github.com/cybellereaper/selenelang.svg" alt="Go Reference"></a>
+</p>
+
+> 🌙✨ Welcome to the Selene galaxy! The repository has been reorganized so every script, doc, and tool has a cozy constellation. This README doubles as a mission control dashboard complete with animated signposts.
+
+## Table of contents
+
+1. [Orbit overview](#orbit-overview)
+2. [Quick launch](#quick-launch)
+3. [CLI star chart](#cli-star-chart)
+4. [Example nebula](#example-nebula)
+5. [Documentation constellations](#documentation-constellations)
+6. [Embedding rocket fuel](#embedding-rocket-fuel)
+7. [Repository map](#repository-map)
+8. [Contributing meteors](#contributing-meteors)
+
+---
+
+## Orbit overview
 
 Selene is an experimental programming-language frontend written in Go. It packages the full toolchain needed to prototype new language ideas: a lexer, a Pratt parser that produces rich abstract syntax trees (ASTs), an interpreter-grade runtime, a bytecode compiler and virtual machine, an opinionated formatter, and an ergonomic CLI. Use Selene to iterate on language design, embed the runtime inside Go applications, or publish tooling such as language servers and transpilers.
 
-## Overview of the toolchain
+<div align="center">
+  <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExazllM2JwOW5jM2lmMzc5a2FnaGcxZHBua2p5cmNwYm9sOWp2NmZuYSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/3oEjI6SIIHBdRxXI40/giphy.gif" width="320" alt="Stars swirling animation" />
+</div>
 
-Selene is intentionally modular so that every layer can be reused on its own or composed into a full pipeline:
+## Quick launch
 
-- **Tokens and lexer (`internal/token`, `internal/lexer`)** – Provides the keyword table, punctuators, literal types, and a lexer that emits tokens with precise `Pos`/`End` locations. Block (`/* ... */`) and line (`// ...`) comments are skipped while preserving offsets for diagnostics.
-- **AST (`internal/ast`)** – Defines node structures for packages, declarations, statements, expressions, patterns, and contracts. Each node embeds positional metadata which powers error reporting, IDE integrations, and code generation.
-- **Parser (`internal/parser`)** – Implements a Pratt parser with operator-precedence rules that understand Selene modules, imports, variable and function declarations, structs/classes/enums, pattern-matching, contracts, and expression-level features such as Elvis (`?:`), safe navigation (`?.`), and extension-method syntax.
-- **Runtime interpreter (`internal/runtime`)** – Executes ASTs in a tree-walking interpreter with lexical scopes, immutable and mutable bindings, first-class functions, user-defined types, pointer semantics (`&`, `*`), structural interfaces (`is`/`!is`), resource-safe `using` blocks, structured error handling (`try`/`catch`/`finally`, `throw`), lightweight concurrency primitives (`spawn`, `channel`, `await`), and a standard library of built-ins (`print`, `format`, etc.). Function contracts are enforced at call sites.
-- **Bytecode compiler and VM** – `runtime.Compile` turns parse trees into compact bytecode chunks that can be executed by the Selene virtual machine (`selene run --vm`). The VM reuses runtime values so you can experiment with evaluation order or ahead-of-time execution.
-- **JIT runner and Windows bundler** – `selene run --jit` keeps cached bytecode for reduced dispatch overhead, and `selene build --windows-exe` packages programs together with the runtime to create standalone Windows executables.
-- **Formatter and transpiler** – `selene fmt` produces canonical layouts for `.selene` sources (the same engine backs the language server), and `selene transpile --lang go` generates Go scaffolding that mirrors Selene packages for embedding or experimentation.
-- **Language server and editor tooling** – `selene lsp` speaks the Language Server Protocol, enabling diagnostics, completion, formatting, and symbol indexing in editors. A ready-to-publish VS Code extension (`vscode-extension/`) wraps the server with syntax highlighting and packaging workflows.
-- **Project metadata** – `selene.toml` and `selene.lock` record module metadata, documentation roots, example directories, and vendored dependencies with SHA-256 checksums so that builds remain reproducible.
-
-## Getting started
-
-### Prerequisites
-- Go 1.21 or later (the module itself targets Go 1.24, but the CLI compiles with the current stable toolchain).
-- A POSIX-compatible shell for running the examples.
-
-### Install the module and CLI
+> 🚀 **Launch checklist:** Go 1.21+, a POSIX shell, and curiosity.
 
 ```bash
+git clone https://github.com/cybellereaper/selenelang.git
+cd selenelang
 go mod tidy
 go build ./...
-```
-
-Install the `selene` binary into your `$GOBIN` to make the CLI globally available:
-
-```bash
 go install ./cmd/selene
 ```
 
-### Run the first script
+Fire up the CLI to verify the install:
 
-Create a simple program in `examples/hello.selene`:
+```bash
+selene --help
+```
+
+### First flight
+
+Create a simple program in `examples/fundamentals/hello.selene`:
 
 ```selene
-// examples/hello.selene
+// examples/fundamentals/hello.selene
 let greeting: String = "Hello";
 
 fn greet(name: String): String => greeting + ", " + name;
@@ -57,57 +65,61 @@ fn main() {
 }
 ```
 
-Execute it with the interpreter:
+Run it through each propulsion system:
 
 ```bash
-selene run examples/hello.selene
+selene run examples/fundamentals/hello.selene
+selene run --vm examples/fundamentals/hello.selene
+selene run --jit examples/fundamentals/hello.selene
 ```
 
-Output:
+### Formatter + tests
 
+Polish every script and exercise the curated gallery:
+
+```bash
+selene fmt -w examples
+selene test --mode all --verbose
 ```
-Hello, Selene
-```
 
-## CLI capabilities
-
-The `cmd/selene` binary exposes the entire toolchain. Core subcommands include:
+## CLI star chart
 
 | Command | Purpose |
 | --- | --- |
-| `selene run <file>` | Interpret a script directly, or add `--vm` / `--jit` to execute via the bytecode VM or JIT runner. |
+| `selene run <file>` | Interpret a script directly, or add `--vm` / `--jit` for alternate backends. |
 | `selene tokens <file>` | Print the token stream emitted by the lexer. |
-| `selene fmt [-w] <pattern>` | Format Selene sources in-place or to STDOUT. |
+| `selene fmt [-w] <path>` | Format Selene sources in place or to STDOUT. |
 | `selene build --out <file> <input>` | Compile a script to bytecode and write the chunk to disk. |
 | `selene transpile --lang go --out <file> <input>` | Generate Go scaffolding for the given Selene module. |
-| `selene test --mode all --verbose` | Execute curated examples through the interpreter, VM, or JIT pipelines. |
-| `selene deps add/list/verify` | Manage vendored dependencies with cryptographic checksums recorded in `selene.toml` and `selene.lock`. |
+| `selene test --mode all --verbose` | Execute curated examples through the interpreter, VM, and JIT pipelines. |
+| `selene deps add/list/verify` | Manage vendored dependencies with cryptographic checksums. |
 | `selene init <module>` | Scaffold a new workspace with a manifest, documentation skeleton, and starter source file. |
 | `selene lsp` | Launch the Language Server Protocol endpoint used by editors and the VS Code extension. |
 
-Use `selene help <command>` for the full flag reference.
+## Example nebula
 
-## Example gallery
+The `examples/` directory is now organized by theme so you can warp directly to the scenario you need:
 
-The `examples/` folder is intentionally comprehensive so you can explore language semantics and runtime behavior. Highlights include:
+```
+examples/
+  fundamentals/     Language basics (hello world, math, strings, flow control)
+  modularity/       Modules, packages, and dependency management
+  runtime/          Concurrency, error handling, and condition dispatch
+  showcase/         Guided language tour that touches the whole surface area
+  tooling/          VM, recursion, and extension-method experiments
+  types-patterns/   Structs, enums, interfaces, contracts, and pattern matching
+```
 
-- `language_tour.selene` – a single program that exercises modules, structs, enums, pattern matching, and advanced control flow.
-- `collections.selene` – arrays, objects, optional property access, and Elvis defaults.
-- `concurrency.selene` – task spawning, channel communication, and `await` coordination.
-- `conditions.selene` – rule-based `condition { when ... }` dispatch.
-- `errors.selene` – `using` blocks, structured error handling, and `throw` expressions.
-- `interfaces.selene` – structural interface conformance with structs and extension methods.
-- `pointers.selene` – address-of/dereference operators and reference semantics.
+Run any script with `selene run path/to/example.selene` or stress-test them all via `selene test --mode all --verbose`.
 
-Run any example with `selene run path/to/example.selene` to see the runtime in action.
+## Documentation constellations
 
-## Documentation
+- The `docs/` folder powers a GitHub Pages site and mirrors the new structure: `guides/`, `integration/`, `reference/`, and `showcase/`.
+- Start with [Guides → Getting started](docs/guides/getting-started.md) or [Guides → Language tour](docs/guides/language-tour.md).
+- Dive into the [Reference](docs/reference/) for a formal catalog of syntax and semantics.
+- Launch the [Example showcase](docs/showcase/) to view animated callouts for each script category.
 
-- The `docs/` directory is publishable via GitHub Pages. Configure the repository to serve `main` → `/docs` to host the language reference, quick-start guide, and embedding walkthroughs.
-- The Go API reference for the module is available on [pkg.go.dev](https://pkg.go.dev/github.com/cybellereaper/selenelang) via the badge above.
-- AST and runtime packages expose positional metadata (`Pos`, `End`) to power tooling such as linters, formatters, and IDE integrations.
-
-## Embedding Selene inside Go
+## Embedding rocket fuel
 
 Execute Selene code from your own Go programs by wiring together the lexer, parser, and runtime:
 
@@ -124,7 +136,7 @@ import (
 )
 
 func main() {
-    script, err := os.ReadFile("examples/hello.selene")
+    script, err := os.ReadFile("examples/fundamentals/hello.selene")
     if err != nil {
         panic(err)
     }
@@ -147,24 +159,32 @@ func main() {
 
 From here you can extend the runtime with new built-ins, feed compiled bytecode into the VM, or export diagnostics into your own editor integrations.
 
-## Repository layout
+## Repository map
 
 ```
-cmd/selene/         Command-line entry point and subcommand wiring
-internal/token/     Token definitions and keyword lookup tables
-internal/lexer/     Scanner that produces tokens with precise positions
-internal/parser/    Pratt parser that builds AST nodes from token streams
-internal/ast/       AST structures with metadata for tooling
-internal/runtime/   Interpreter, runtime values, VM compiler, and execution pipelines
-examples/           Curated Selene programs showcasing language features
-docs/               Publishable documentation set for GitHub Pages
-vscode-extension/   VS Code extension that wraps the language server and syntax assets
 assets/             Project artwork and supporting images
+cmd/selene/         Command-line entry point and subcommand wiring
+docs/
+  guides/           Tutorials and onboarding material
+  integration/      Embedding walkthroughs for Go applications
+  reference/        Language reference for syntax and semantics
+  showcase/         Animated example gallery
+examples/
+  fundamentals/     Core language building blocks
+  modularity/       Module/package patterns
+  runtime/          Advanced flow control & concurrency
+  showcase/         The all-in-one language tour
+  tooling/          VM + developer tooling playgrounds
+  types-patterns/   Type system + pattern matching demonstrations
+internal/           Lexer, parser, runtime, JIT, VM, and supporting packages
 selene.toml         Project manifest describing modules, docs, and dependencies
 selene.lock         Locked dependency checksums for reproducible vendors
 vendor/             Vendored Selene packages with verified hashes
+vscode-extension/   VS Code extension wrapping the language server and syntax assets
 ```
 
-## Roadmap and contributions
+## Contributing meteors
 
 Selene already implements a broad runtime surface area, but there is room for continued iteration: richer standard libraries, deeper tooling integrations, additional bytecode targets, and community-driven language features. Contributions, issues, and experiments are welcome—clone the repository, open pull requests, and share what you build with Selene.
+
+> 💡 Pro tip: run `selene fmt -w .` and `selene test --mode all --verbose` before submitting changes to keep the galaxy shining.
