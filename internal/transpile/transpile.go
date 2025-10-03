@@ -1,3 +1,4 @@
+// Package transpile converts Selene programs into Go source code.
 package transpile
 
 import (

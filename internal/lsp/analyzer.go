@@ -1,3 +1,4 @@
+// Package lsp implements the Selene language server analysis pipeline.
 package lsp
 
 import (
@@ -11,6 +12,7 @@ import (
 
 const diagnosticSource = "selene"
 
+// AnalysisResult aggregates data produced while analyzing a document.
 type AnalysisResult struct {
 	Tokens      []token.Token
 	Program     *ast.Program
@@ -18,10 +20,12 @@ type AnalysisResult struct {
 	Symbols     *SymbolIndex
 }
 
+// Analyzer coordinates lexical, syntactic, and linting passes.
 type Analyzer struct {
 	linter *Linter
 }
 
+// NewAnalyzer constructs an Analyzer, defaulting to a fresh linter when nil.
 func NewAnalyzer(linter *Linter) *Analyzer {
 	if linter == nil {
 		linter = NewLinter()
@@ -29,6 +33,7 @@ func NewAnalyzer(linter *Linter) *Analyzer {
 	return &Analyzer{linter: linter}
 }
 
+// Analyze runs the lexer, parser, and linter to produce diagnostics and symbols.
 func (a *Analyzer) Analyze(text string) AnalysisResult {
 	tokens, lexDiagnostics := lexDocument(text)
 	program, parseDiagnostics := parseDocument(text)

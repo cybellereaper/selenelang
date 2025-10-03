@@ -11,6 +11,7 @@ import (
 	"selenelang/internal/format"
 )
 
+// Server implements the Selene language server protocol surface.
 type Server struct {
 	conn         *jsonRPCConnection
 	documents    *DocumentStore
@@ -19,6 +20,7 @@ type Server struct {
 	shuttingDown int32
 }
 
+// NewServer wires together the JSON-RPC transport and language features.
 func NewServer(r io.Reader, w io.Writer) *Server {
 	analyzer := NewAnalyzer(nil)
 	return &Server{
@@ -29,6 +31,7 @@ func NewServer(r io.Reader, w io.Writer) *Server {
 	}
 }
 
+// Run processes incoming requests until the client disconnects.
 func (s *Server) Run() error {
 	for {
 		msg, err := s.conn.Read()

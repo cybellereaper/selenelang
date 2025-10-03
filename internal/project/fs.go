@@ -1,3 +1,4 @@
+// Package project provides helpers for working with Selene project metadata.
 package project
 
 import (

@@ -1,3 +1,4 @@
+// Package windows contains helpers for building Selene executables on Windows.
 package windows
 
 import (
@@ -54,8 +55,7 @@ type stubData struct {
 	EncodedSource string
 }
 
-// BuildExecutable emits a Windows PE executable that embeds the provided Selene
-// source and executes it using the JIT runtime when launched.
+// BuildExecutable assembles a Windows executable that embeds the Selene program.
 func BuildExecutable(startDir, sourceName, sourceCode, output string) error {
 	moduleRoot, err := findModuleRoot(startDir)
 	if err != nil {
@@ -98,24 +98,24 @@ func BuildExecutable(startDir, sourceName, sourceCode, output string) error {
 }
 
 func findModuleRoot(start string) (string, error) {
-        dir, err := filepath.Abs(start)
-        if err != nil {
-                return "", err
-        }
-        for {
-                candidate := filepath.Join(dir, "go.mod")
-                if _, statErr := os.Stat(candidate); statErr == nil {
-                        return dir, nil
-                } else if os.IsNotExist(statErr) {
-                        parent := filepath.Dir(dir)
-                        if parent == dir {
-                                break
-                        }
-                        dir = parent
-                        continue
-                } else {
-                        return "", statErr
-                }
-        }
-        return "", fmt.Errorf("could not locate go.mod from %s", start)
+	dir, err := filepath.Abs(start)
+	if err != nil {
+		return "", err
+	}
+	for {
+		candidate := filepath.Join(dir, "go.mod")
+		if _, statErr := os.Stat(candidate); statErr == nil {
+			return dir, nil
+		} else if os.IsNotExist(statErr) {
+			parent := filepath.Dir(dir)
+			if parent == dir {
+				break
+			}
+			dir = parent
+			continue
+		} else {
+			return "", statErr
+		}
+	}
+	return "", fmt.Errorf("could not locate go.mod from %s", start)
 }

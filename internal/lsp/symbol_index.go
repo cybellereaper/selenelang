@@ -8,6 +8,7 @@ import (
 	"selenelang/internal/token"
 )
 
+// SymbolIndex stores aggregated symbol information for a document.
 type SymbolIndex struct {
 	DocumentSymbols []DocumentSymbol
 	FunctionSymbols []FunctionSymbol
@@ -15,6 +16,7 @@ type SymbolIndex struct {
 	VariableSymbols []VariableSymbol
 }
 
+// FunctionSymbol describes a function declaration discovered in the source.
 type FunctionSymbol struct {
 	Name           string
 	Detail         string
@@ -26,11 +28,13 @@ type FunctionSymbol struct {
 	Async          bool
 }
 
+// ParameterSymbol captures metadata about a function parameter.
 type ParameterSymbol struct {
 	Name  string
 	Range Range
 }
 
+// TypeSymbol represents a declared type such as a class or interface.
 type TypeSymbol struct {
 	Name   string
 	Kind   int
@@ -38,6 +42,7 @@ type TypeSymbol struct {
 	Range  Range
 }
 
+// VariableSymbol records information about a variable declaration.
 type VariableSymbol struct {
 	Name       string
 	Range      Range
@@ -46,6 +51,7 @@ type VariableSymbol struct {
 	DeclColumn int
 }
 
+// FunctionForPosition returns the innermost function covering the position.
 func (i *SymbolIndex) FunctionForPosition(pos Position) *FunctionSymbol {
 	if i == nil {
 		return nil

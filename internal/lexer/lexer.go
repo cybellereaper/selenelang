@@ -1,3 +1,4 @@
+// Package lexer tokenizes Selene source into a stream of tokens.
 package lexer
 
 import (
@@ -6,6 +7,7 @@ import (
 	"selenelang/internal/token"
 )
 
+// Lexer produces tokens from Selene source text.
 type Lexer struct {
 	input        []rune
 	position     int
@@ -15,6 +17,7 @@ type Lexer struct {
 	column       int
 }
 
+// New creates a lexer for the provided source string.
 func New(input string) *Lexer {
 	l := &Lexer{
 		input: []rune(input),
@@ -24,6 +27,7 @@ func New(input string) *Lexer {
 	return l
 }
 
+// NextToken returns the next token from the input.
 func (l *Lexer) NextToken() token.Token {
 	l.skipWhitespaceAndComments()
 

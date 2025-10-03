@@ -1,3 +1,4 @@
+// Package format renders Selene source code with consistent whitespace.
 package format
 
 import (

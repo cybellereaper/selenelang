@@ -1,3 +1,4 @@
+// Package runtime implements the Selene interpreter and execution model.
 package runtime
 
 import (
@@ -15,6 +16,7 @@ import (
 	"selenelang/internal/token"
 )
 
+// Value is implemented by every runtime value and exposes its type and display form.
 type Value interface {
 	Type() string
 	Inspect() string
@@ -52,25 +54,37 @@ func normalizeTypeName(name string) string {
 	}
 }
 
+// Number wraps a numeric Selene runtime value.
 type Number struct {
 	Value float64
 }
 
-func (n *Number) Type() string    { return "Number" }
+// Type implements the Value interface for Number.
+func (n *Number) Type() string { return "Number" }
+
+// Inspect returns a human-readable representation of Number.
 func (n *Number) Inspect() string { return strconv.FormatFloat(n.Value, 'f', -1, 64) }
 
+// String wraps a UTF-8 Selene string value.
 type String struct {
 	Value string
 }
 
-func (s *String) Type() string    { return "String" }
+// Type implements the Value interface for String.
+func (s *String) Type() string { return "String" }
+
+// Inspect returns a human-readable representation of String.
 func (s *String) Inspect() string { return s.Value }
 
+// Boolean wraps a true or false runtime value.
 type Boolean struct {
 	Value bool
 }
 
+// Type implements the Value interface for Boolean.
 func (b *Boolean) Type() string { return "Boolean" }
+
+// Inspect returns a human-readable representation of Boolean.
 func (b *Boolean) Inspect() string {
 	if b.Value {
 		return "true"
@@ -78,21 +92,29 @@ func (b *Boolean) Inspect() string {
 	return "false"
 }
 
+// Null represents the Selene null literal.
 type Null struct{}
 
-func (n *Null) Type() string    { return "Null" }
+// Type implements the Value interface for Null.
+func (n *Null) Type() string { return "Null" }
+
+// Inspect returns a human-readable representation of Null.
 func (n *Null) Inspect() string { return "null" }
 
 var NullValue Value = &Null{}
 var TrueValue Value = &Boolean{Value: true}
 var FalseValue Value = &Boolean{Value: false}
 
+// ErrorValue captures runtime errors with optional causes.
 type ErrorValue struct {
 	Message string
 	Cause   Value
 }
 
+// Type implements the Value interface for ErrorValue.
 func (e *ErrorValue) Type() string { return "Error" }
+
+// Inspect returns a human-readable representation of ErrorValue.
 func (e *ErrorValue) Inspect() string {
 	if e.Cause != nil {
 		return fmt.Sprintf("<error %s : %s>", e.Message, e.Cause.Inspect())
@@ -111,11 +133,15 @@ func toErrorValue(val Value) *ErrorValue {
 	}
 }
 
+// Array represents an ordered collection of values.
 type Array struct {
 	Elements []Value
 }
 
+// Type implements the Value interface for Array.
 func (a *Array) Type() string { return "Array" }
+
+// Inspect returns a human-readable representation of Array.
 func (a *Array) Inspect() string {
 	parts := make([]string, len(a.Elements))
 	for i, el := range a.Elements {
@@ -124,11 +150,15 @@ func (a *Array) Inspect() string {
 	return "[" + strings.Join(parts, ", ") + "]"
 }
 
+// Object models a dynamic map of string keys to values.
 type Object struct {
 	Properties map[string]Value
 }
 
+// Type implements the Value interface for Object.
 func (o *Object) Type() string { return "Object" }
+
+// Inspect returns a human-readable representation of Object.
 func (o *Object) Inspect() string {
 	parts := make([]string, 0, len(o.Properties))
 	for k, v := range o.Properties {
@@ -137,12 +167,13 @@ func (o *Object) Inspect() string {
 	return "{" + strings.Join(parts, ", ") + "}"
 }
 
+// Module captures exported bindings from a loaded module.
 type Module struct {
 	Name    string
 	Exports map[string]Value
 }
 
-// NewModule constructs a module wrapper with a defensive copy of the provided exports.
+// NewModule constructs a module value with the provided exports.
 func NewModule(name string, exports map[string]Value) *Module {
 	copy := make(map[string]Value, len(exports))
 	for k, v := range exports {
@@ -151,7 +182,10 @@ func NewModule(name string, exports map[string]Value) *Module {
 	return &Module{Name: name, Exports: copy}
 }
 
+// Type implements the Value interface for Module.
 func (m *Module) Type() string { return "Module" }
+
+// Inspect returns a human-readable representation of Module.
 func (m *Module) Inspect() string {
 	keys := make([]string, 0, len(m.Exports))
 	for k := range m.Exports {
@@ -165,6 +199,7 @@ func (m *Module) Inspect() string {
 	return fmt.Sprintf("<module %s [%s]>", m.Name, strings.Join(parts, ", "))
 }
 
+// StructType describes the shape of a user-defined struct.
 type StructType struct {
 	Name    string
 	Fields  []string
@@ -172,17 +207,24 @@ type StructType struct {
 	Static  map[string]Value
 }
 
+// Type implements the Value interface for StructType.
 func (s *StructType) Type() string { return "Struct" }
+
+// Inspect returns a human-readable representation of StructType.
 func (s *StructType) Inspect() string {
 	return fmt.Sprintf("<struct %s>", s.Name)
 }
 
+// StructInstance stores field values for a struct.
 type StructInstance struct {
 	Definition *StructType
 	Fields     map[string]Value
 }
 
+// Type implements the Value interface for StructInstance.
 func (s *StructInstance) Type() string { return s.Definition.Name }
+
+// Inspect returns a human-readable representation of StructInstance.
 func (s *StructInstance) Inspect() string {
 	keys := make([]string, 0, len(s.Fields))
 	for k := range s.Fields {
@@ -196,6 +238,7 @@ func (s *StructInstance) Inspect() string {
 	return fmt.Sprintf("%s{%s}", s.Definition.Name, strings.Join(parts, ", "))
 }
 
+// ClassType represents the metadata for a Selene class.
 type ClassType struct {
 	Name    string
 	Fields  []string
@@ -204,17 +247,24 @@ type ClassType struct {
 	Super   *ClassType
 }
 
+// Type implements the Value interface for ClassType.
 func (c *ClassType) Type() string { return "Class" }
+
+// Inspect returns a human-readable representation of ClassType.
 func (c *ClassType) Inspect() string {
 	return fmt.Sprintf("<class %s>", c.Name)
 }
 
+// ClassInstance stores fields and methods for a class instance.
 type ClassInstance struct {
 	Definition *ClassType
 	Fields     map[string]Value
 }
 
+// Type implements the Value interface for ClassInstance.
 func (c *ClassInstance) Type() string { return c.Definition.Name }
+
+// Inspect returns a human-readable representation of ClassInstance.
 func (c *ClassInstance) Inspect() string {
 	keys := make([]string, 0, len(c.Fields))
 	for k := range c.Fields {
@@ -254,13 +304,17 @@ func (c *ClassType) lookupStatic(name string) (Value, bool) {
 	return nil, false
 }
 
+// EnumType describes an enumeration and its cases.
 type EnumType struct {
 	Name         string
 	Cases        map[string][]string
 	Constructors map[string]Value
 }
 
+// Type implements the Value interface for EnumType.
 func (e *EnumType) Type() string { return "Enum" }
+
+// Inspect returns a human-readable representation of EnumType.
 func (e *EnumType) Inspect() string {
 	keys := make([]string, 0, len(e.Cases))
 	for k := range e.Cases {
@@ -270,6 +324,7 @@ func (e *EnumType) Inspect() string {
 	return fmt.Sprintf("<enum %s [%s]>", e.Name, strings.Join(keys, ", "))
 }
 
+// EnumInstance stores the active case of an enumeration.
 type EnumInstance struct {
 	Enum   *EnumType
 	Case   string
@@ -277,7 +332,10 @@ type EnumInstance struct {
 	Order  []string
 }
 
+// Type implements the Value interface for EnumInstance.
 func (e *EnumInstance) Type() string { return e.Enum.Name }
+
+// Inspect returns a human-readable representation of EnumInstance.
 func (e *EnumInstance) Inspect() string {
 	args := make([]string, len(e.Order))
 	for i, name := range e.Order {
@@ -289,13 +347,17 @@ func (e *EnumInstance) Inspect() string {
 	return fmt.Sprintf("%s.%s(%s)", e.Enum.Name, e.Case, strings.Join(args, ", "))
 }
 
+// ChannelValue represents a concurrent communication channel.
 type ChannelValue struct {
 	ch       chan Value
 	capacity int
 	closed   bool
 }
 
+// Type implements the Value interface for ChannelValue.
 func (c *ChannelValue) Type() string { return "Channel" }
+
+// Inspect returns a human-readable representation of ChannelValue.
 func (c *ChannelValue) Inspect() string {
 	state := "open"
 	if c.closed {
@@ -334,17 +396,22 @@ type taskResult struct {
 	err   error
 }
 
+// Task tracks asynchronous execution state.
 type Task struct {
 	once   sync.Once
 	result taskResult
 	ch     chan taskResult
 }
 
+// NewTask creates a pending task with synchronization primitives.
 func NewTask() *Task {
 	return &Task{ch: make(chan taskResult, 1)}
 }
 
-func (t *Task) Type() string    { return "Task" }
+// Type implements the Value interface for Task.
+func (t *Task) Type() string { return "Task" }
+
+// Inspect returns a human-readable representation of Task.
 func (t *Task) Inspect() string { return "<task>" }
 
 func (t *Task) deliver(val Value, err error) {
@@ -364,17 +431,22 @@ func (t *Task) await() taskResult {
 	return t.result
 }
 
+// Join waits for the task to complete and returns its result.
 func (t *Task) Join() (Value, error) {
 	res := t.await()
 	return res.value, res.err
 }
 
+// Contract captures runtime contract requirements.
 type Contract struct {
 	Name    string
 	Exports map[string]Value
 }
 
+// Type implements the Value interface for Contract.
 func (c *Contract) Type() string { return "Contract" }
+
+// Inspect returns a human-readable representation of Contract.
 func (c *Contract) Inspect() string {
 	keys := make([]string, 0, len(c.Exports))
 	for k := range c.Exports {
@@ -384,12 +456,16 @@ func (c *Contract) Inspect() string {
 	return fmt.Sprintf("<contract %s [%s]>", c.Name, strings.Join(keys, ", "))
 }
 
+// InterfaceType records an interface name and required methods.
 type InterfaceType struct {
 	Name    string
 	Methods map[string]int
 }
 
+// Type implements the Value interface for InterfaceType.
 func (i *InterfaceType) Type() string { return "Interface" }
+
+// Inspect returns a human-readable representation of InterfaceType.
 func (i *InterfaceType) Inspect() string {
 	keys := make([]string, 0, len(i.Methods))
 	for k := range i.Methods {
@@ -399,8 +475,10 @@ func (i *InterfaceType) Inspect() string {
 	return fmt.Sprintf("<interface %s [%s]>", i.Name, strings.Join(keys, ", "))
 }
 
+// BuiltinFunction is a Go function exposed as a Selene builtin.
 type BuiltinFunction func(args []Value) (Value, error)
 
+// Function wraps a Selene function declaration and its environment.
 type Function struct {
 	Declaration *ast.FunctionDeclaration
 	Env         *Environment
@@ -408,7 +486,10 @@ type Function struct {
 	Name        string
 }
 
+// Type implements the Value interface for Function.
 func (f *Function) Type() string { return "Function" }
+
+// Inspect returns a human-readable representation of Function.
 func (f *Function) Inspect() string {
 	if f.Name != "" {
 		return fmt.Sprintf("<fn %s>", f.Name)
@@ -416,6 +497,7 @@ func (f *Function) Inspect() string {
 	return "<fn>"
 }
 
+// NewBoolean wraps a Go bool as a Selene boolean value.
 func NewBoolean(v bool) Value {
 	if v {
 		return TrueValue
@@ -423,9 +505,13 @@ func NewBoolean(v bool) Value {
 	return FalseValue
 }
 
+// NewNumber wraps a Go float64 as a Selene number.
 func NewNumber(v float64) Value { return &Number{Value: v} }
-func NewString(v string) Value  { return &String{Value: v} }
 
+// NewString wraps a Go string as a Selene string.
+func NewString(v string) Value { return &String{Value: v} }
+
+// NewBuiltin creates a runtime value for a builtin function.
 func NewBuiltin(name string, fn BuiltinFunction) Value {
 	return &Function{Name: name, Builtin: fn}
 }
@@ -434,20 +520,24 @@ type returnSignal struct {
 	value Value
 }
 
+// Error implements the error interface for return signals.
 func (r *returnSignal) Error() string { return "return" }
 
 type breakSignal struct{}
 
+// Error implements the error interface for break signals.
 func (b *breakSignal) Error() string { return "break" }
 
 type continueSignal struct{}
 
+// Error implements the error interface for continue signals.
 func (c *continueSignal) Error() string { return "continue" }
 
 type runtimeError struct {
 	value *ErrorValue
 }
 
+// Error exposes the error message stored in the runtime error.
 func (r *runtimeError) Error() string { return r.value.Message }
 
 func wrapRuntimeError(err error) *runtimeError {
@@ -460,21 +550,25 @@ func wrapRuntimeError(err error) *runtimeError {
 	return &runtimeError{value: &ErrorValue{Message: err.Error()}}
 }
 
+// Environment stores variable bindings with optional outer scopes.
 type Environment struct {
 	store map[string]Value
 	outer *Environment
 }
 
+// NewEnvironment creates a fresh environment with no outer scope.
 func NewEnvironment() *Environment {
 	return &Environment{store: make(map[string]Value)}
 }
 
+// NewEnclosedEnvironment creates a child scope linked to an outer environment.
 func NewEnclosedEnvironment(outer *Environment) *Environment {
 	env := NewEnvironment()
 	env.outer = outer
 	return env
 }
 
+// Get looks up a value in the environment chain.
 func (e *Environment) Get(name string) (Value, bool) {
 	if val, ok := e.store[name]; ok {
 		return val, true
@@ -485,12 +579,13 @@ func (e *Environment) Get(name string) (Value, bool) {
 	return nil, false
 }
 
+// Set stores a binding in the current environment scope.
 func (e *Environment) Set(name string, val Value) Value {
 	e.store[name] = val
 	return val
 }
 
-// Snapshot returns a shallow copy of the bindings stored in the environment.
+// Snapshot returns a copy of the environment bindings.
 func (e *Environment) Snapshot() map[string]Value {
 	out := make(map[string]Value, len(e.store))
 	for k, v := range e.store {
@@ -499,6 +594,7 @@ func (e *Environment) Snapshot() map[string]Value {
 	return out
 }
 
+// Assign updates an existing binding in the environment chain.
 func (e *Environment) Assign(name string, val Value) (Value, error) {
 	if _, ok := e.store[name]; ok {
 		e.store[name] = val
@@ -520,12 +616,16 @@ func (e *Environment) resolve(name string) (*Environment, bool) {
 	return nil, false
 }
 
+// Pointer references a binding inside an environment chain.
 type Pointer struct {
 	env  *Environment
 	name string
 }
 
-func (p *Pointer) Type() string    { return "Pointer" }
+// Type implements the Value interface for Pointer.
+func (p *Pointer) Type() string { return "Pointer" }
+
+// Inspect returns a human-readable representation of Pointer.
 func (p *Pointer) Inspect() string { return fmt.Sprintf("&%s", p.name) }
 
 func (p *Pointer) get() (Value, error) {
@@ -549,10 +649,12 @@ func (p *Pointer) set(val Value) error {
 	return nil
 }
 
+// Runtime executes Selene programs and holds the global environment.
 type Runtime struct {
 	env *Environment
 }
 
+// New constructs a runtime with built-in functions installed.
 func New() *Runtime {
 	env := NewEnvironment()
 	env.Set("print", NewBuiltin("print", builtinPrint))
@@ -562,10 +664,12 @@ func New() *Runtime {
 	return &Runtime{env: env}
 }
 
+// Environment returns the runtime's global environment.
 func (r *Runtime) Environment() *Environment {
 	return r.env
 }
 
+// Run executes a Selene program and returns the last value.
 func (r *Runtime) Run(program *ast.Program) (Value, error) {
 	analysis := AnalyzeMain(program)
 	result, err := evalProgram(program, r.env)
