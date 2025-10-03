@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="https://github.com/cybellereaper/selenelang/blob/main/assets/logo-design-1.png" width="160" alt="Moon orbit animation" />
+  <img src="https://github.com/cybellereaper/selenelang/blob/main/assets/logo-design-1.png" width="512" alt="Moon orbit animation" />
 </p> 
 
-<h1 align="center">Selene Language Toolkit</h1>
+<!-- <h1 align="center">Selene Language Toolkit</h1> -->
 
 <p align="center">
   <a href="https://github.com/cybellereaper/selenelang/actions/workflows/go-tests.yml"><img src="https://github.com/cybellereaper/selenelang/actions/workflows/go-tests.yml/badge.svg" alt="Go Tests"></a>
