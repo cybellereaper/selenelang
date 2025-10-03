@@ -3,7 +3,7 @@ package lexer
 import (
 	"testing"
 
-	"selenelang/internal/token"
+	"github.com/cybellereaper/selenelang/internal/token"
 )
 
 func TestLexerRecognizesCoreTokens(t *testing.T) {

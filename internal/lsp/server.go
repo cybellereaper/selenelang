@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"selenelang/internal/format"
+	"github.com/cybellereaper/selenelang/internal/format"
 )
 
 // Server implements the Selene language server protocol surface.

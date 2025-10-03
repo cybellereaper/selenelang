@@ -10,11 +10,11 @@ import (
 	"sort"
 	"strings"
 
-	"selenelang/internal/ast"
-	"selenelang/internal/lexer"
-	"selenelang/internal/parser"
-	"selenelang/internal/project"
-	"selenelang/internal/runtime"
+	"github.com/cybellereaper/selenelang/internal/ast"
+	"github.com/cybellereaper/selenelang/internal/lexer"
+	"github.com/cybellereaper/selenelang/internal/parser"
+	"github.com/cybellereaper/selenelang/internal/project"
+	"github.com/cybellereaper/selenelang/internal/runtime"
 )
 
 // ParseFile reads, lexes, and parses a Selene source file into an AST program.

@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"selenelang/internal/token"
+	"github.com/cybellereaper/selenelang/internal/token"
 )
 
 // Highlighter produces semantic tokens for editors.

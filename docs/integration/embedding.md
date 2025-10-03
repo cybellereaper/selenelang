@@ -17,13 +17,13 @@ import (
     "fmt"
     "os"
 
-    "selenelang/internal/lexer"
-    "selenelang/internal/parser"
-    "selenelang/internal/runtime"
+    "github.com/cybellereaper/selenelang/internal/lexer"
+    "github.com/cybellereaper/selenelang/internal/parser"
+    "github.com/cybellereaper/selenelang/internal/runtime"
 )
 
 func main() {
-    script, err := os.ReadFile("examples/hello.selene")
+    script, err := os.ReadFile("examples/fundamentals/hello.selene")
     if err != nil {
         panic(err)
     }

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"selenelang/internal/project"
-	"selenelang/internal/runtime"
+	"github.com/cybellereaper/selenelang/internal/project"
+	"github.com/cybellereaper/selenelang/internal/runtime"
 )
 
 func TestLastSegment(t *testing.T) {

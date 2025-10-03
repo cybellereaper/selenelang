@@ -3,9 +3,9 @@ package jit
 import (
 	"testing"
 
-	"selenelang/internal/lexer"
-	"selenelang/internal/parser"
-	"selenelang/internal/runtime"
+	"github.com/cybellereaper/selenelang/internal/lexer"
+	"github.com/cybellereaper/selenelang/internal/parser"
+	"github.com/cybellereaper/selenelang/internal/runtime"
 )
 
 func TestJITRunSimpleProgram(t *testing.T) {

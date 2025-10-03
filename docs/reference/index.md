@@ -134,4 +134,4 @@ Selene patterns appear inside `match` statements.
 - Condition dispatch blocks for rule-driven branching.
 - Built-in helpers including `print`, `format`, `spawn`, and `channel`.
 
-Refer to the [example scripts](examples.md) for runnable demonstrations of the supported features.
+Refer to the [example scripts](../showcase/) for runnable demonstrations of the supported features.

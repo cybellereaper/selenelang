@@ -11,17 +11,17 @@ import (
 	"path/filepath"
 	"strings"
 
-	buildwindows "selenelang/internal/build/windows"
-	"selenelang/internal/examples"
-	"selenelang/internal/format"
-	"selenelang/internal/jit"
-	"selenelang/internal/lexer"
-	"selenelang/internal/lsp"
-	"selenelang/internal/project"
-	"selenelang/internal/runtime"
-	"selenelang/internal/token"
-	"selenelang/internal/toolchain"
-	"selenelang/internal/transpile"
+	buildwindows "github.com/cybellereaper/selenelang/internal/build/windows"
+	"github.com/cybellereaper/selenelang/internal/examples"
+	"github.com/cybellereaper/selenelang/internal/format"
+	"github.com/cybellereaper/selenelang/internal/jit"
+	"github.com/cybellereaper/selenelang/internal/lexer"
+	"github.com/cybellereaper/selenelang/internal/lsp"
+	"github.com/cybellereaper/selenelang/internal/project"
+	"github.com/cybellereaper/selenelang/internal/runtime"
+	"github.com/cybellereaper/selenelang/internal/token"
+	"github.com/cybellereaper/selenelang/internal/toolchain"
+	"github.com/cybellereaper/selenelang/internal/transpile"
 )
 
 func main() {

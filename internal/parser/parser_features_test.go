@@ -3,8 +3,8 @@ package parser
 import (
 	"testing"
 
-	"selenelang/internal/ast"
-	"selenelang/internal/lexer"
+	"github.com/cybellereaper/selenelang/internal/ast"
+	"github.com/cybellereaper/selenelang/internal/lexer"
 )
 
 func parseProgram(t *testing.T, src string) *ast.Program {

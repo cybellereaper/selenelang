@@ -5,8 +5,8 @@ import (
 	"strings"
 	"unicode"
 
-	"selenelang/internal/ast"
-	"selenelang/internal/token"
+	"github.com/cybellereaper/selenelang/internal/ast"
+	"github.com/cybellereaper/selenelang/internal/token"
 )
 
 // Linter performs lightweight static checks on documents.

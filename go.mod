@@ -1,4 +1,4 @@
-module selenelang
+module github.com/cybellereaper/selenelang
 
 go 1.24.3
 

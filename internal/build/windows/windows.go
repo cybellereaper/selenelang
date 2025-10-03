@@ -18,10 +18,10 @@ import (
     "log"
     "strings"
 
-    "selenelang/internal/jit"
-    "selenelang/internal/lexer"
-    "selenelang/internal/parser"
-    "selenelang/internal/runtime"
+    "github.com/cybellereaper/selenelang/internal/jit"
+    "github.com/cybellereaper/selenelang/internal/lexer"
+    "github.com/cybellereaper/selenelang/internal/parser"
+    "github.com/cybellereaper/selenelang/internal/runtime"
 )
 
 const embeddedSourceName = "{{.SourceName}}"

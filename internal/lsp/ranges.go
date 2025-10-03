@@ -1,8 +1,8 @@
 package lsp
 
 import (
-	"selenelang/internal/ast"
-	"selenelang/internal/token"
+	"github.com/cybellereaper/selenelang/internal/ast"
+	"github.com/cybellereaper/selenelang/internal/token"
 )
 
 func positionFromTokenPos(pos token.Position) Position {

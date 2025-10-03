@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"selenelang/internal/ast"
-	"selenelang/internal/token"
+	"github.com/cybellereaper/selenelang/internal/ast"
+	"github.com/cybellereaper/selenelang/internal/token"
 )
 
 // ToGo converts a Selene program into Go source code.

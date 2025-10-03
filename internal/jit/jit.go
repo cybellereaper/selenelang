@@ -4,8 +4,8 @@ package jit
 import (
 	"fmt"
 
-	"selenelang/internal/ast"
-	"selenelang/internal/runtime"
+	"github.com/cybellereaper/selenelang/internal/ast"
+	"github.com/cybellereaper/selenelang/internal/runtime"
 )
 
 // Program represents a Selene program compiled into a sequence of eagerly

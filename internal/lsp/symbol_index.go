@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"selenelang/internal/ast"
-	"selenelang/internal/token"
+	"github.com/cybellereaper/selenelang/internal/ast"
+	"github.com/cybellereaper/selenelang/internal/token"
 )
 
 // SymbolIndex stores aggregated symbol information for a document.

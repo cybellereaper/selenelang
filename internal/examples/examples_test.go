@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"selenelang/internal/examples"
-	"selenelang/internal/project"
+	"github.com/cybellereaper/selenelang/internal/examples"
+	"github.com/cybellereaper/selenelang/internal/project"
 )
 
 func TestExamplesRunAcrossBackends(t *testing.T) {

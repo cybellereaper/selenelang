@@ -5,8 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	"selenelang/internal/ast"
-	"selenelang/internal/token"
+	"github.com/cybellereaper/selenelang/internal/ast"
+	"github.com/cybellereaper/selenelang/internal/token"
 )
 
 // DocumentStore maintains analyzed documents for the language server.

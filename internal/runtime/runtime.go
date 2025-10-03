@@ -10,10 +10,10 @@ import (
 	"strings"
 	"sync"
 
-	"selenelang/internal/ast"
-	"selenelang/internal/lexer"
-	"selenelang/internal/parser"
-	"selenelang/internal/token"
+	"github.com/cybellereaper/selenelang/internal/ast"
+	"github.com/cybellereaper/selenelang/internal/lexer"
+	"github.com/cybellereaper/selenelang/internal/parser"
+	"github.com/cybellereaper/selenelang/internal/token"
 )
 
 // Value is implemented by every runtime value and exposes its type and display form.

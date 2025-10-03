@@ -4,7 +4,7 @@ package lexer
 import (
 	"strings"
 
-	"selenelang/internal/token"
+	"github.com/cybellereaper/selenelang/internal/token"
 )
 
 // Lexer produces tokens from Selene source text.

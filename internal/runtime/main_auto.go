@@ -1,6 +1,6 @@
 package runtime
 
-import "selenelang/internal/ast"
+import "github.com/cybellereaper/selenelang/internal/ast"
 
 // MainAnalysis captures metadata about a program's main function usage.
 type MainAnalysis struct {

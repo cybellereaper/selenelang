@@ -3,7 +3,7 @@
 // stages.
 package ast
 
-import "selenelang/internal/token"
+import "github.com/cybellereaper/selenelang/internal/token"
 
 // Node is implemented by every AST element and reports its source span.
 type Node interface {

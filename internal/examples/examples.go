@@ -12,10 +12,10 @@ import (
 	"sort"
 	"strings"
 
-	"selenelang/internal/jit"
-	"selenelang/internal/project"
-	"selenelang/internal/runtime"
-	"selenelang/internal/toolchain"
+	"github.com/cybellereaper/selenelang/internal/jit"
+	"github.com/cybellereaper/selenelang/internal/project"
+	"github.com/cybellereaper/selenelang/internal/runtime"
+	"github.com/cybellereaper/selenelang/internal/toolchain"
 )
 
 // Mode identifies which execution backend should be used when running an example.

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"selenelang/internal/ast"
+	"github.com/cybellereaper/selenelang/internal/ast"
 )
 
 // OpCode represents a single virtual machine instruction.

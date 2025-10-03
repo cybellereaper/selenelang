@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"selenelang/internal/lexer"
-	"selenelang/internal/token"
+	"github.com/cybellereaper/selenelang/internal/lexer"
+	"github.com/cybellereaper/selenelang/internal/token"
 )
 
 var noSpaceAfter = map[token.Type]bool{

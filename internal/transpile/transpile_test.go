@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"selenelang/internal/ast"
+	"github.com/cybellereaper/selenelang/internal/ast"
 )
 
 func TestToGoProducesDeterministicProgram(t *testing.T) {
