@@ -1,0 +1,164 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Selene",
+  "scopeName": "source.selene",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#keywords" },
+    { "include": "#operators" },
+    { "include": "#identifiers" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.selene",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "captures": {
+            "0": { "name": "punctuation.definition.comment.selene" }
+          }
+        },
+        {
+          "name": "comment.line.double-slash.selene",
+          "match": "//.*$",
+          "captures": {
+            "0": { "name": "punctuation.definition.comment.selene" }
+          }
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.triple.selene",
+          "begin": "\"\"\"",
+          "end": "\"\"\"",
+          "patterns": [
+            { "include": "#interpolation" }
+          ]
+        },
+        {
+          "name": "string.quoted.raw.selene",
+          "begin": "`",
+          "end": "`"
+        },
+        {
+          "name": "string.quoted.double.selene",
+          "begin": "f?\"",
+          "end": "\"",
+          "patterns": [
+            { "include": "#interpolation" },
+            {
+              "name": "constant.other.placeholder.selene",
+              "match": "%[+#0\- ]?(?:[0-9]+)?(?:\\.[0-9]+)?[bcdeEfFgGosxX]"
+            },
+            {
+              "name": "constant.character.escape.selene",
+              "match": "\\\\[\\"'`\\nrt0]"
+            }
+          ]
+        }
+      ]
+    },
+    "interpolation": {
+      "patterns": [
+        {
+          "name": "punctuation.section.embedded.begin.selene",
+          "match": "\\$\\{"
+        },
+        {
+          "name": "source.selene.embedded",
+          "begin": "\\$\\{",
+          "end": "\}",
+          "patterns": [
+            { "include": "#comments" },
+            { "include": "#strings" },
+            { "include": "#numbers" },
+            { "include": "#keywords" },
+            { "include": "#operators" },
+            { "include": "#identifiers" }
+          ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.selene",
+          "match": "\\b0[xX][0-9a-fA-F]+\\b"
+        },
+        {
+          "name": "constant.numeric.selene",
+          "match": "\\b[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.selene",
+          "match": "\\b(?:if|else|for|while|match|when|condition|return|break|continue|try|catch|finally|throw|await|using|spawn|channel)\\b"
+        },
+        {
+          "name": "keyword.declaration.selene",
+          "match": "\\b(?:let|var|fn|ext|struct|class|enum|interface|contract|module|package|import|as)\\b"
+        },
+        {
+          "name": "storage.type.selene",
+          "match": "\\b(?:async|returns)\\b"
+        },
+        {
+          "name": "constant.language.selene",
+          "match": "\\b(?:true|false|null)\\b"
+        },
+        {
+          "name": "keyword.operator.type.selene",
+          "match": "\\b(?:is|!is)\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.assignment.selene",
+          "match": "\\+=|-=|\\*=|/=|%=|=|=>"
+        },
+        {
+          "name": "keyword.operator.logical.selene",
+          "match": "\\?|\\?:|\\|\\||&&|!"
+        },
+        {
+          "name": "keyword.operator.comparison.selene",
+          "match": "==|!=|<=|>=|<|>"
+        },
+        {
+          "name": "keyword.operator.arithmetic.selene",
+          "match": "\\+|-|\\*|/|%"
+        },
+        {
+          "name": "keyword.operator.pointer.selene",
+          "match": "&|\\*"
+        },
+        {
+          "name": "punctuation.separator.selene",
+          "match": "\\.|\\,|;|:\\??"
+        }
+      ]
+    },
+    "identifiers": {
+      "patterns": [
+        {
+          "name": "entity.name.function.selene",
+          "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\()"
+        },
+        {
+          "name": "variable.other.selene",
+          "match": "\\b[_A-Za-z][_A-Za-z0-9]*\\b"
+        }
+      ]
+    }
+  }
+}

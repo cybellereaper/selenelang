@@ -1,0 +1,23 @@
+package examples
+
+fn describe(shape: Any) {
+    condition {
+        when shape.kind == "circle" => {
+            print("Circle area:", 3.14159 * shape.radius * shape.radius);
+        }
+        when shape.kind == "rectangle" => {
+            print("Rectangle area:", shape.width * shape.height);
+        }
+        else => {
+            print("Unknown shape type", shape.kind);
+        }
+    }
+}
+
+let circle = { kind: "circle", radius: 5 };
+let rect = { kind: "rectangle", width: 4, height: 6 };
+let mystery = { kind: "triangle" };
+
+describe(circle);
+describe(rect);
+describe(mystery);

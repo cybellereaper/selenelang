@@ -1,0 +1,79 @@
+{
+  "name": "selene-lang-support",
+  "displayName": "Selene Language Support",
+  "description": "Language server, syntax highlighting, and workspace commands for the Selene programming language.",
+  "version": "0.1.0",
+  "publisher": "selene-lang",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.82.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:selene",
+    "onCommand:selene.restartLanguageServer"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "selene",
+        "aliases": ["Selene", "selene"],
+        "extensions": [".selene"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "selene",
+        "scopeName": "source.selene",
+        "path": "./syntaxes/selene.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "type": "object",
+      "title": "Selene",
+      "properties": {
+        "selene.languageServerPath": {
+          "type": "string",
+          "default": "selene",
+          "description": "Command used to launch the Selene language server."
+        },
+        "selene.languageServerArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "lsp"
+          ],
+          "description": "Arguments passed to the language server command."
+        },
+        "selene.languageServerEnv": {
+          "type": "object",
+          "default": {},
+          "description": "Additional environment variables for the language server process."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "selene.restartLanguageServer",
+        "title": "Selene: Restart Language Server"
+      }
+    ]
+  },
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "eslint": "^8.57.0",
+    "vscode": "^1.1.42"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
+}

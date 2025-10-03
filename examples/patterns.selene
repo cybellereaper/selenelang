@@ -1,0 +1,18 @@
+let shapes = [
+    { kind: "circle", radius: 2 },
+    { kind: "square", side: 4 },
+    { kind: "triangle", base: 3, height: 4 }
+];
+
+fn describe(shape: Any) {
+    match shape {
+        { kind: "circle", radius: r } => print("Circle with radius " + r);
+        { kind: "square", side: s } => print("Square with side " + s);
+        other => print("Unknown shape kind " + (other.kind ?: "n/a"));
+    }
+}
+
+print("Cataloging shapes:");
+describe(shapes[0]);
+describe(shapes[1]);
+describe(shapes[2]);

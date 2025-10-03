@@ -1,0 +1,23 @@
+package examples
+
+interface Speaker {
+    fn speak(name: String): String;
+}
+
+struct Person(name: String) {
+    fn speak(name: String): String => "Hi, I'm " + name + " (" + self.name + ")";
+}
+
+ext fn String.speak(name: String): String => "Echo from \"" + this + "\" to " + name;
+
+fn introduce(someone: Speaker, name: String) {
+    print(someone.speak(name));
+}
+
+let luna = Person("Luna");
+introduce(luna, "Orion");
+
+let word = "Selene";
+if word is Speaker {
+    introduce(word, "Orion");
+}

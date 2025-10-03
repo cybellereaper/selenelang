@@ -1,0 +1,15 @@
+// Modules and imports in Selene.
+module math_utils {
+    fn square(n: Number): Number => n * n;
+    let constants = { tau: 6.28318 };
+}
+
+import math_utils.square;
+import math_utils.constants as consts;
+
+fn main() {
+    print("square(5) =", square(5));
+    print("tau ≈", consts.tau);
+}
+
+main();

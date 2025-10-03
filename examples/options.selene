@@ -1,0 +1,16 @@
+let profile = {
+    name: "Nova",
+    contact: {
+        email: "nova@example.com",
+        address: null
+    }
+};
+
+let email = profile.contact?.email ?: "unknown@selene.dev";
+print("Email: " + email);
+
+let city = profile.contact?.address?.city ?: "Unknown";
+print("City: " + city);
+
+let safeContact = profile.contact!!;
+print("Forced contact email: " + safeContact.email);
