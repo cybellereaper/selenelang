@@ -1,0 +1,22 @@
+// Example showcasing the Selene virtual machine execution path.
+package examples
+
+fn accumulate(values: Array): Number {
+    var total = 0;
+    for (let i = 0; i < values.length; i += 1) {
+        total += values[i];
+    }
+    return total;
+}
+
+fn describe(label: String, values: Array) {
+    let sum = accumulate(values);
+    print(f"${label}: total=${sum}, count=${values.length}");
+}
+
+fn main() {
+    describe("evens", [2, 4, 6, 8, 10]);
+    describe("odds", [1, 3, 5, 7, 9]);
+}
+
+main();
