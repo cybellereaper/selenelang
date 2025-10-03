@@ -1,0 +1,10 @@
+// examples/hello.selene
+let greeting: String = "Hello";
+
+fn greet(name: String): String => greeting + ", " + name;
+
+fn main() {
+    print(greet("Selene"));
+}
+
+main();
