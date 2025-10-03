@@ -1,3 +1,11 @@
+---
+
+⚠️ **UNSTABLE FEATURE – WIP**  
+This section is under active development. APIs and behavior may change without notice.  
+Do not rely on this in production.
+
+---
+
 # Selene Language Support for VS Code
 
 This Visual Studio Code extension provides an integrated experience for the Selene programming language. It bundles syntax highlighting, editor configuration, and a bridge to the `selene lsp` language server so scripts enjoy rich diagnostics and completions.
