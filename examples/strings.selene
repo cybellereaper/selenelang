@@ -1,5 +1,6 @@
 package examples
 
+// String interpolation, raw literals, format specifiers, and extensions.
 ext fn String.reverse(): String {
     var result = "";
     var i = this.length - 1;
@@ -12,16 +13,20 @@ ext fn String.reverse(): String {
 
 ext fn String.isPalindrome(): Boolean = this == this.reverse();
 
-let name = "Selene";
-let greeting = "Hello, ${name}!";
-let raw = r"""raw strings keep \${placeholders} untouched""";
-let multi = """over
+fn main() {
+    let name = "Selene";
+    let greeting = "Hello, ${name}!";
+    let raw = r"""raw strings keep \${placeholders} untouched""";
+    let multi = """over
 multiple
 lines""";
-let precise = f"pi ~= ${3.1415926535:%.2f}";
+    let precise = f"pi ~= ${3.1415926535:%.2f}";
 
-print(greeting);
-print(raw);
-print(multi);
-print(precise);
-print(f"is ${name} a palindrome? ${name.isPalindrome():upper}");
+    print(greeting);
+    print(raw);
+    print(multi);
+    print(precise);
+    print(f"is ${name} a palindrome? ${name.isPalindrome():upper}");
+}
+
+main();

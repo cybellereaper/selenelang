@@ -1,5 +1,6 @@
 package examples
 
+// Structural interfaces implemented by structs and extensions.
 interface Speaker {
     fn speak(name: String): String;
 }
@@ -14,10 +15,14 @@ fn introduce(someone: Speaker, name: String) {
     print(someone.speak(name));
 }
 
-let luna = Person("Luna");
-introduce(luna, "Orion");
+fn main() {
+    let luna = Person("Luna");
+    introduce(luna, "Orion");
 
-let word = "Selene";
-if word is Speaker {
-    introduce(word, "Orion");
+    let word = "Selene";
+    if word is Speaker {
+        introduce(word, "Orion");
+    }
 }
+
+main();

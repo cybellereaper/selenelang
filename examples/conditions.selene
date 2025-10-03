@@ -1,5 +1,6 @@
 package examples
 
+// Rule-based condition dispatch similar to pattern matching.
 fn describe(shape: Any) {
     condition {
         when shape.kind == "circle" => {
@@ -14,10 +15,14 @@ fn describe(shape: Any) {
     }
 }
 
-let circle = { kind: "circle", radius: 5 };
-let rect = { kind: "rectangle", width: 4, height: 6 };
-let mystery = { kind: "triangle" };
+fn main() {
+    let circle = { kind: "circle", radius: 5 };
+    let rect = { kind: "rectangle", width: 4, height: 6 };
+    let mystery = { kind: "triangle" };
 
-describe(circle);
-describe(rect);
-describe(mystery);
+    describe(circle);
+    describe(rect);
+    describe(mystery);
+}
+
+main();

@@ -1,10 +1,19 @@
-// examples/hello.selene
+package examples
+
+// A gentle introduction to Selene: immutable bindings, expression-bodied
+// functions, and string formatting helpers.
 let greeting: String = "Hello";
 
-fn greet(name: String): String => greeting + ", " + name;
+fn greet(name: String): String => format("{} from {}", greeting, name);
+
+fn excited(message: String): String {
+    return message + "!!!";
+}
 
 fn main() {
-    print(greet("Selene"));
+    let target = "Selene";
+    print(greet(target));
+    print(excited(greet("the toolkit")));
 }
 
 main();

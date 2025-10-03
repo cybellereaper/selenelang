@@ -1,5 +1,6 @@
-// Demonstrates function contracts and reusable contract declarations.
+package examples
 
+// Function contracts and reusable contract declarations.
 contract validators {
     fn withinRange(value: Number, min: Number, max: Number): Boolean {
         return value >= min && value <= max;
@@ -21,11 +22,19 @@ fn clamp(value: Number, min: Number, max: Number): Number
     return value;
 }
 
-let values = [ -5, 3, 42 ];
-for (let i = 0; i < values.length; i = i + 1) {
-    let original = values[i];
-    let clamped = clamp(original, 0, 10);
-    print("clamp(" + original + ") => " + clamped);
-    let ok = validators.withinRange(clamped, 0, 10);
-    print("within range? => " + ok);
+fn main() {
+    let values = [-5, 3, 42];
+    let clamped0 = clamp(values[0], 0, 10);
+    print("clamp(" + values[0] + ") => " + clamped0);
+    print("within range? => " + validators.withinRange(clamped0, 0, 10));
+
+    let clamped1 = clamp(values[1], 0, 10);
+    print("clamp(" + values[1] + ") => " + clamped1);
+    print("within range? => " + validators.withinRange(clamped1, 0, 10));
+
+    let clamped2 = clamp(values[2], 0, 10);
+    print("clamp(" + values[2] + ") => " + clamped2);
+    print("within range? => " + validators.withinRange(clamped2, 0, 10));
 }
+
+main();

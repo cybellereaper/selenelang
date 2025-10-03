@@ -1,5 +1,6 @@
 package examples
 
+// Tasks, channels, and awaiting asynchronous work.
 fn count(limit: Int, out: Channel) {
     var i = 0;
     while i < limit {
@@ -9,21 +10,25 @@ fn count(limit: Int, out: Channel) {
     out.close();
 }
 
-let updates = channel();
-spawn(count, 4, updates);
-
-try {
-    while true {
-        let message = await updates;
-        print(message);
-    }
-} catch (err) {
-    print("updates exhausted");
-}
-
 fn slowAdd(a: Int, b: Int): Int {
     return a + b;
 }
 
-let task = spawn(slowAdd, 20, 22);
-print("sum from task:", await task);
+fn main() {
+    let updates = channel();
+    spawn(count, 4, updates);
+
+    try {
+        while true {
+            let message = await updates;
+            print(message);
+        }
+    } catch (err) {
+        print("updates exhausted");
+    }
+
+    let task = spawn(slowAdd, 20, 22);
+    print("sum from task:", await task);
+}
+
+main();

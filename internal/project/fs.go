@@ -1,7 +1,7 @@
 package project
 
 import (
-	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"golang.org/x/mod/sumdb/dirhash"
 )
 
 // EnsureVendorTree prepares the vendor directory under the root.
@@ -66,50 +68,18 @@ func CopyIntoVendor(src, dest string) error {
 
 // HashDirectory produces a deterministic sha256 digest for the directory contents.
 func HashDirectory(root string) (string, error) {
-	var files []string
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if !d.Type().IsRegular() {
-			return nil
-		}
-		rel, err := filepath.Rel(root, path)
-		if err != nil {
-			return err
-		}
-		files = append(files, rel)
-		return nil
-	})
+	sum, err := dirhash.HashDir(root, "", dirhash.Hash1)
 	if err != nil {
 		return "", err
 	}
-	sort.Strings(files)
-	hasher := sha256.New()
-	for _, rel := range files {
-		filePath := filepath.Join(root, rel)
-		f, err := os.Open(filePath)
-		if err != nil {
-			return "", err
-		}
-		if _, err := hasher.Write([]byte(strings.ReplaceAll(rel, "\\", "/"))); err != nil {
-			f.Close()
-			return "", err
-		}
-		if _, err := hasher.Write([]byte{0}); err != nil {
-			f.Close()
-			return "", err
-		}
-		if _, err := io.Copy(hasher, f); err != nil {
-			f.Close()
-			return "", err
-		}
-		f.Close()
+	if !strings.HasPrefix(sum, "h1:") {
+		return "", fmt.Errorf("unexpected hash prefix %q", sum)
 	}
-	return "sha256-" + hex.EncodeToString(hasher.Sum(nil)), nil
+	decoded, err := base64.StdEncoding.DecodeString(strings.TrimPrefix(sum, "h1:"))
+	if err != nil {
+		return "", err
+	}
+	return "sha256-" + hex.EncodeToString(decoded), nil
 }
 
 // VerifyChecksum recomputes the directory digest and compares it to the expected checksum.

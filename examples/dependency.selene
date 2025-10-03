@@ -1,5 +1,6 @@
-package main;
+package examples
 
+// Importing a vendored package from selene.lock.
 import math "github.com/selene-lang/richmath";
 
 fn describe(values: Array) {

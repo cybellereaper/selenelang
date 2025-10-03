@@ -1,23 +1,26 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
-	"io/fs"
+	"io"
+	iofs "io/fs"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
-	"selenelang/internal/ast"
+	buildwindows "selenelang/internal/build/windows"
+	"selenelang/internal/examples"
 	"selenelang/internal/format"
+	"selenelang/internal/jit"
 	"selenelang/internal/lexer"
 	"selenelang/internal/lsp"
-	"selenelang/internal/parser"
 	"selenelang/internal/project"
 	"selenelang/internal/runtime"
 	"selenelang/internal/token"
+	"selenelang/internal/toolchain"
 	"selenelang/internal/transpile"
 )
 
@@ -30,6 +33,10 @@ func main() {
 	switch os.Args[1] {
 	case "run":
 		if err := runCommand(os.Args[2:]); err != nil {
+			exitWithError(err)
+		}
+	case "test":
+		if err := testCommand(os.Args[2:]); err != nil {
 			exitWithError(err)
 		}
 	case "tokens":
@@ -70,13 +77,14 @@ func main() {
 func usage() {
 	fmt.Fprintln(os.Stderr, "usage: selene <command> [options]")
 	fmt.Fprintln(os.Stderr, "commands:")
-	fmt.Fprintln(os.Stderr, "  run [--tokens|--vm] <file> execute a Selene source file")
+	fmt.Fprintln(os.Stderr, "  run [--tokens|--vm|--jit] <file> execute a Selene source file")
+	fmt.Fprintln(os.Stderr, "  test [flags]            execute all example scripts and report pass/fail status")
 	fmt.Fprintln(os.Stderr, "  tokens <file>           dump the token stream for a file")
 	fmt.Fprintln(os.Stderr, "  init <module> [--name]  create a new Selene project")
 	fmt.Fprintln(os.Stderr, "  deps <subcommand>       manage project dependencies (add, list, verify)")
 	fmt.Fprintln(os.Stderr, "  lsp                    start the Selene language server on stdio")
 	fmt.Fprintln(os.Stderr, "  fmt [flags] <files>    format Selene source files")
-	fmt.Fprintln(os.Stderr, "  build [--out] <file>   compile Selene bytecode and optionally emit a listing")
+	fmt.Fprintln(os.Stderr, "  build [--out|--windows-exe] <file>   compile Selene bytecode, emit listings, or build Windows executables")
 	fmt.Fprintln(os.Stderr, "  transpile [flags] <file>  convert Selene sources to another language")
 }
 
@@ -89,6 +97,7 @@ func runCommand(args []string) error {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 	tokensFlag := fs.Bool("tokens", false, "print the token stream")
 	vmFlag := fs.Bool("vm", false, "execute using the Selene virtual machine")
+	jitFlag := fs.Bool("jit", false, "execute using the Selene JIT engine")
 	disFlag := fs.Bool("disassemble", false, "dump bytecode before executing with --vm")
 	fs.SetOutput(os.Stderr)
 	if err := fs.Parse(args); err != nil {
@@ -102,11 +111,25 @@ func runCommand(args []string) error {
 		return dumpTokens(filename)
 	}
 	rt := runtime.New()
-	if err := loadDependencies(rt, filename); err != nil {
+	if err := toolchain.LoadDependencies(rt, filename); err != nil {
 		return err
 	}
+	if *jitFlag {
+		program, _, err := toolchain.ParseFile(filename)
+		if err != nil {
+			return err
+		}
+		compiled, err := jit.Compile(program)
+		if err != nil {
+			return err
+		}
+		if _, err := compiled.Run(rt); err != nil {
+			return fmt.Errorf("jit error: %w", err)
+		}
+		return nil
+	}
 	if *vmFlag {
-		program, _, err := parseFile(filename)
+		program, _, err := toolchain.ParseFile(filename)
 		if err != nil {
 			return err
 		}
@@ -122,7 +145,94 @@ func runCommand(args []string) error {
 		}
 		return nil
 	}
-	return executeFile(rt, filename)
+	return toolchain.ExecuteFile(rt, filename)
+}
+
+func testCommand(args []string) error {
+	fs := flag.NewFlagSet("test", flag.ContinueOnError)
+	modeFlag := fs.String("mode", "all", "execution mode: interp, vm, jit, comma-separated list, or all")
+	filter := fs.String("filter", "", "substring filter applied to example relative paths")
+	list := fs.Bool("list", false, "list examples without executing them")
+	verbose := fs.Bool("v", false, "print script output for each example")
+	fs.SetOutput(os.Stderr)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+
+	wd := mustGetwd()
+	root, err := project.FindRoot(wd)
+	if err != nil {
+		if errors.Is(err, iofs.ErrNotExist) {
+			root = wd
+		} else {
+			return err
+		}
+	}
+	exampleRoots, err := examples.ManifestRoots(root)
+	if err != nil {
+		return err
+	}
+	scripts, err := examples.Discover(root, exampleRoots)
+	if err != nil {
+		return err
+	}
+	if *filter != "" {
+		filtered := make([]examples.Script, 0, len(scripts))
+		for _, script := range scripts {
+			if strings.Contains(script.Relative, *filter) {
+				filtered = append(filtered, script)
+			}
+		}
+		scripts = filtered
+	}
+	if len(scripts) == 0 {
+		if *filter != "" {
+			return fmt.Errorf("no examples match filter %q", *filter)
+		}
+		return errors.New("no examples found")
+	}
+	if *list {
+		for _, script := range scripts {
+			fmt.Fprintln(os.Stdout, script.Relative)
+		}
+		return nil
+	}
+	modes, err := parseModes(*modeFlag)
+	if err != nil {
+		return err
+	}
+	var failures int
+	for _, script := range scripts {
+		for _, mode := range modes {
+			var writer io.Writer
+			var buf *bytes.Buffer
+			if *verbose {
+				buf = bytes.NewBuffer(nil)
+				writer = buf
+			} else {
+				writer = io.Discard
+			}
+			if err := examples.Run(script, mode, writer); err != nil {
+				failures++
+				fmt.Fprintf(os.Stderr, "[FAIL] %s (%s): %v\n", script.Relative, mode, err)
+				continue
+			}
+			fmt.Fprintf(os.Stdout, "[OK] %s (%s)\n", script.Relative, mode)
+			if *verbose && buf.Len() > 0 {
+				lines := strings.Split(strings.TrimRight(buf.String(), "\n"), "\n")
+				for _, line := range lines {
+					if line == "" {
+						continue
+					}
+					fmt.Fprintf(os.Stdout, "    %s\n", line)
+				}
+			}
+		}
+	}
+	if failures > 0 {
+		return fmt.Errorf("%d example(s) failed", failures)
+	}
+	return nil
 }
 
 func tokensCommand(args []string) error {
@@ -135,6 +245,41 @@ func tokensCommand(args []string) error {
 		return errors.New("tokens requires a source file")
 	}
 	return dumpTokens(fs.Arg(0))
+}
+
+func parseModes(input string) ([]examples.Mode, error) {
+	if input == "" {
+		return []examples.Mode{examples.ModeInterpreter}, nil
+	}
+	parts := strings.Split(input, ",")
+	modes := make([]examples.Mode, 0, len(parts))
+	seen := make(map[examples.Mode]struct{})
+	add := func(mode examples.Mode) {
+		if _, ok := seen[mode]; !ok {
+			seen[mode] = struct{}{}
+			modes = append(modes, mode)
+		}
+	}
+	for _, part := range parts {
+		switch strings.TrimSpace(strings.ToLower(part)) {
+		case "", "interp", "interpreter":
+			add(examples.ModeInterpreter)
+		case "vm":
+			add(examples.ModeVM)
+		case "jit":
+			add(examples.ModeJIT)
+		case "all":
+			add(examples.ModeInterpreter)
+			add(examples.ModeVM)
+			add(examples.ModeJIT)
+		default:
+			return nil, fmt.Errorf("unknown mode %q", part)
+		}
+	}
+	if len(modes) == 0 {
+		add(examples.ModeInterpreter)
+	}
+	return modes, nil
 }
 
 func fmtCommand(args []string) error {
@@ -186,6 +331,7 @@ func fmtCommand(args []string) error {
 func buildCommand(args []string) error {
 	fs := flag.NewFlagSet("build", flag.ContinueOnError)
 	out := fs.String("out", "", "write bytecode listing to the provided file")
+	windowsExe := fs.String("windows-exe", "", "produce a Windows executable that runs via the JIT engine")
 	fs.SetOutput(os.Stderr)
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -195,13 +341,23 @@ func buildCommand(args []string) error {
 	}
 	filename := fs.Arg(0)
 	rt := runtime.New()
-	program, _, err := parseFile(filename)
+	program, source, err := toolchain.ParseFile(filename)
 	if err != nil {
 		return err
 	}
 	chunk, err := rt.Compile(program)
 	if err != nil {
 		return err
+	}
+	if *windowsExe != "" {
+		abs, err := filepath.Abs(filename)
+		if err != nil {
+			return err
+		}
+		startDir := filepath.Dir(abs)
+		if err := buildwindows.BuildExecutable(startDir, filepath.Base(filename), source, *windowsExe); err != nil {
+			return err
+		}
 	}
 	listing := chunk.Disassemble()
 	if *out != "" {
@@ -223,7 +379,7 @@ func transpileCommand(args []string) error {
 		return errors.New("transpile requires a source file")
 	}
 	filename := fs.Arg(0)
-	program, _, err := parseFile(filename)
+	program, _, err := toolchain.ParseFile(filename)
 	if err != nil {
 		return err
 	}
@@ -435,150 +591,6 @@ func dumpTokens(filename string) error {
 		fmt.Printf("%s\t%q\n", tok.Type, tok.Literal)
 	}
 	return nil
-}
-
-func parseFile(filename string) (*ast.Program, string, error) {
-	content, err := os.ReadFile(filename)
-	if err != nil {
-		return nil, "", fmt.Errorf("failed to read %s: %w", filename, err)
-	}
-	source := string(content)
-	l := lexer.New(source)
-	p := parser.New(l)
-	program := p.ParseProgram()
-	if errs := p.Errors(); len(errs) > 0 {
-		return nil, "", fmt.Errorf("parse error:\n%s", strings.Join(errs, "\n"))
-	}
-	return program, source, nil
-}
-
-func executeFile(rt *runtime.Runtime, filename string) error {
-	program, _, err := parseFile(filename)
-	if err != nil {
-		return err
-	}
-	if _, err := rt.Run(program); err != nil {
-		return fmt.Errorf("runtime error: %w", err)
-	}
-	return nil
-}
-
-func loadDependencies(rt *runtime.Runtime, entry string) error {
-	abs, err := filepath.Abs(entry)
-	if err != nil {
-		return err
-	}
-	root, err := project.FindRoot(filepath.Dir(abs))
-	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return nil
-		}
-		return err
-	}
-	manifest, err := project.LoadManifest(root)
-	if err != nil {
-		return err
-	}
-	if len(manifest.Dependencies) == 0 {
-		return nil
-	}
-	lockfile, err := project.LoadLockfile(root)
-	if err != nil {
-		return err
-	}
-	modules := project.SortedModules(manifest.Dependencies)
-	for _, module := range modules {
-		dep := manifest.Dependencies[module]
-		locked, ok := lockfile.Lookup(module)
-		if !ok {
-			return fmt.Errorf("dependency %s is not recorded in selene.lock", module)
-		}
-		vendorPath := filepath.Join(root, locked.Vendor)
-		if err := project.VerifyChecksum(vendorPath, locked.Checksum); err != nil {
-			return fmt.Errorf("%s: %w", module, err)
-		}
-		if err := loadVendoredModule(rt, module, vendorPath); err != nil {
-			return fmt.Errorf("%s@%s: %w", module, dep.Version, err)
-		}
-	}
-	return nil
-}
-
-func loadVendoredModule(rt *runtime.Runtime, modulePath, vendorPath string) error {
-	files, err := project.ListSeleneFiles(vendorPath)
-	if err != nil {
-		return err
-	}
-	if len(files) == 0 {
-		return fmt.Errorf("no .selene files found in %s", vendorPath)
-	}
-	depRuntime := runtime.New()
-	for _, file := range files {
-		if err := executeFile(depRuntime, file); err != nil {
-			return err
-		}
-	}
-	exports := depRuntime.Environment().Snapshot()
-	for _, builtin := range []string{"print", "format", "spawn", "channel", "__package__"} {
-		delete(exports, builtin)
-	}
-	moduleVal := runtime.NewModule(lastSegment(modulePath), exports)
-	attachModule(rt.Environment(), modulePath, moduleVal)
-	return nil
-}
-
-func attachModule(env *runtime.Environment, modulePath string, moduleVal *runtime.Module) {
-	segments := strings.Split(modulePath, "/")
-	if len(segments) == 0 {
-		return
-	}
-	current := moduleVal
-	for i := len(segments) - 2; i >= 0; i-- {
-		parent := runtime.NewModule(segments[i], map[string]runtime.Value{segments[i+1]: current})
-		current = parent
-	}
-	rootName := segments[0]
-	if existing, ok := env.Get(rootName); ok {
-		if existingModule, ok := existing.(*runtime.Module); ok {
-			mergeModules(existingModule, current)
-		} else {
-			env.Set(rootName, current)
-		}
-	} else {
-		env.Set(rootName, current)
-	}
-	env.Set(segments[len(segments)-1], moduleVal)
-}
-
-func mergeModules(target, source *runtime.Module) {
-	if target.Exports == nil {
-		target.Exports = make(map[string]runtime.Value)
-	}
-	keys := make([]string, 0, len(source.Exports))
-	for name := range source.Exports {
-		keys = append(keys, name)
-	}
-	sort.Strings(keys)
-	for _, name := range keys {
-		val := source.Exports[name]
-		if existing, ok := target.Exports[name]; ok {
-			tMod, tOK := existing.(*runtime.Module)
-			sMod, sOK := val.(*runtime.Module)
-			if tOK && sOK {
-				mergeModules(tMod, sMod)
-				continue
-			}
-		}
-		target.Exports[name] = val
-	}
-}
-
-func lastSegment(path string) string {
-	if path == "" {
-		return ""
-	}
-	parts := strings.Split(path, "/")
-	return parts[len(parts)-1]
 }
 
 func mustGetwd() string {

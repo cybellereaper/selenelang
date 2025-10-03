@@ -1,3 +1,5 @@
+package examples
+
 // Modules and imports in Selene.
 module math_utils {
     fn square(n: Number): Number => n * n;

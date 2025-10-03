@@ -2,106 +2,135 @@ grammar ModernLang;
 
 // ---------------- LEXICAL ----------------
 
-PACKAGE    : 'package';
-MODULE     : 'module';
-IMPORT     : 'import';
-AS         : 'as';
-LET        : 'let';
-VAR        : 'var';
-FN         : 'fn';
-ASYNC      : 'async';
-CONTRACT   : 'contract';
-RETURNS    : 'returns';
-CLASS      : 'class';
-STRUCT     : 'struct';
-ENUM       : 'enum';
-INTERFACE  : 'interface';
-EXT        : 'ext';
-MATCH      : 'match';
-IF         : 'if';
-ELSE       : 'else';
-WHILE      : 'while';
-FOR        : 'for';
-USING      : 'using';
-TRY        : 'try';
-CATCH      : 'catch';
-FINALLY    : 'finally';
-THROW      : 'throw';
-RETURN     : 'return';
-BREAK      : 'break';
-CONTINUE   : 'continue';
-CONDITION  : 'condition';
-WHEN       : 'when';
-AWAIT      : 'await';
-TRUE       : 'true';
-FALSE      : 'false';
-NULL       : 'null';
-IS         : 'is';
-NOTIS      : '!is';
+PACKAGE   : 'package';
+MODULE    : 'module';
+IMPORT    : 'import';
+AS        : 'as';
+LET       : 'let';
+VAR       : 'var';
+FN        : 'fn';
+ASYNC     : 'async';
+CONTRACT  : 'contract';
+RETURNS   : 'returns';
+CLASS     : 'class';
+STRUCT    : 'struct';
+ENUM      : 'enum';
+INTERFACE : 'interface';
+EXT       : 'ext';
+MATCH     : 'match';
+IF        : 'if';
+ELSE      : 'else';
+WHILE     : 'while';
+FOR       : 'for';
+USING     : 'using';
+TRY       : 'try';
+CATCH     : 'catch';
+FINALLY   : 'finally';
+THROW     : 'throw';
+RETURN    : 'return';
+BREAK     : 'break';
+CONTINUE  : 'continue';
+CONDITION : 'condition';
+WHEN      : 'when';
+AWAIT     : 'await';
+TRUE      : 'true';
+FALSE     : 'false';
+NULL      : 'null';
+IS        : 'is';
+NOTIS     : '!is';
 
-AMPERSAND  : '&';
-
+ARROW          : '=>';
+ELVIS          : '?:';
+SAFE_DOT       : '?.';
+NON_NULL       : '!!';
 PLUS_ASSIGN    : '+=';
 MINUS_ASSIGN   : '-=';
 STAR_ASSIGN    : '*=';
 SLASH_ASSIGN   : '/=';
 PERCENT_ASSIGN : '%=';
-ELVIS          : '?:';
-SAFE_DOT       : '?.';
-NON_NULL       : '!!';
+ASSIGN         : '=';
+PLUS           : '+';
+MINUS          : '-';
+ASTERISK       : '*';
+SLASH          : '/';
+PERCENT        : '%';
+BANG           : '!';
+QUESTION       : '?';
+COLON          : ':';
+AMPERSAND      : '&';
+EQ             : '==';
+NOT_EQ         : '!=';
+LT             : '<';
+LTE            : '<=';
+GT             : '>';
+GTE            : '>=';
+OR             : '||';
+AND            : '&&';
+COMMA          : ',';
+DOT            : '.';
+SEMICOLON      : ';';
+LPAREN         : '(';
+RPAREN         : ')';
+LBRACE         : '{';
+RBRACE         : '}';
+LBRACKET       : '[';
+RBRACKET       : ']';
 
-IDENTIFIER : [a-zA-Z_] [a-zA-Z0-9_]* ;
-NUMBER     : [0-9]+ ('.' [0-9]+)? ;
-STRING     : '"' (~['"'\\] | '\\' .)* '"';
+IDENTIFIER : LETTER (LETTER | DIGIT)* ;
+NUMBER     : DIGIT+ ('.' DIGIT+)? ;
+STRING     : '"' STRING_CHAR* '"'
+           | TRIPLE_QUOTE .*? TRIPLE_QUOTE
+           ;
 FORMATSTRING
-           : 'f"' (~['"'\\] | '\\' .)* '"'
-           | 'f"""' .*? '"""'
+           : 'f"' STRING_CHAR* '"'
+           | 'f' TRIPLE_QUOTE .*? TRIPLE_QUOTE
            ;
-RAWSTRING  : 'r"' (~['"'\\])* '"'
-           | 'r"""' .*? '"""'
-           | '`' .*? '`'
+RAWSTRING  : 'r"' RAW_CHAR* '"'
+           | 'r' TRIPLE_QUOTE .*? TRIPLE_QUOTE
+           | '`' RAW_BACKTICK* '`'
            ;
-BOOLEAN    : TRUE | FALSE;
 
-WS           : [ \t\r\n]+ -> skip;
-COMMENT      : '//' ~[\r\n]* -> skip;
-BLOCK_COMMENT: '/*' .*? '*/' -> skip;
+fragment STRING_CHAR : '\\' . | ~['"\\] ;
+fragment RAW_CHAR    : ~['"\\] ;
+fragment RAW_BACKTICK: ~'`' ;
+fragment LETTER      : [a-zA-Z_];
+fragment DIGIT       : [0-9];
+fragment TRIPLE_QUOTE: '"""';
+
+WS            : [ \t\r\n]+ -> skip;
+COMMENT       : '//' ~[\r\n]* -> skip;
+BLOCK_COMMENT : '/*' .*? '*/' -> skip;
 
 // ---------------- PROGRAM ----------------
 
 program
-    : packageDecl? (moduleDecl | statement)* EOF
+    : packageDecl? topLevelItem* EOF
+    ;
+
+topLevelItem
+    : moduleDecl
+    | declaration
+    | statement
     ;
 
 packageDecl
-    : PACKAGE IDENTIFIER ';'?
+    : PACKAGE IDENTIFIER SEMICOLON?
     ;
 
-// ---------------- MODULES ----------------
-
 moduleDecl
-    : MODULE IDENTIFIER block?
+    : MODULE IDENTIFIER block
     ;
 
 importDecl
-    : IMPORT (
-          IDENTIFIER STRING (AS IDENTIFIER)?
-        | importPath (AS IDENTIFIER)?
-      ) ';'
+    : IMPORT (IDENTIFIER STRING (AS IDENTIFIER)? | importPath (AS IDENTIFIER)?) SEMICOLON
     ;
 
 importPath
-    : IDENTIFIER ('.' IDENTIFIER)*
+    : IDENTIFIER (DOT IDENTIFIER)*
     | STRING
     ;
 
-qualifiedName
-    : IDENTIFIER ('.' IDENTIFIER)*
-    ;
-
-// ---------------- STATEMENTS ----------------
-
-statement
+declaration
     : variableDecl
     | functionDecl
     | extensionDecl
@@ -111,7 +140,17 @@ statement
     | interfaceDecl
     | contractDecl
     | importDecl
-    | matchStmt
+    ;
+
+statement
+    : declaration
+    | flowStmt
+    | block
+    | expressionStmt
+    ;
+
+flowStmt
+    : matchStmt
     | ifStmt
     | whileStmt
     | forStmt
@@ -122,90 +161,97 @@ statement
     | breakStmt
     | continueStmt
     | conditionStmt
-    | block
-    | expression ';'
+    ;
+
+expressionStmt
+    : expression SEMICOLON?
     ;
 
 block
-    : '{' statement* '}'
+    : LBRACE statement* RBRACE
     ;
 
-// ---------------- VARIABLES ----------------
+// ---------------- DECLARATIONS ----------------
 
 variableDecl
-    : (LET | VAR) IDENTIFIER (':' type_)? '=' expression ';'
+    : (LET | VAR) IDENTIFIER (COLON type_)? ASSIGN expression SEMICOLON
     ;
 
-// ---------------- FUNCTIONS ----------------
-
 functionDecl
-    : FN IDENTIFIER typeParams? '(' paramList? ')' (':' type_)? (ASYNC)? contractBlock? (block | ('=' | '=>') expression ';'?)
+    : FN IDENTIFIER typeParams? parameterClause returnType? ASYNC? contractBlock? functionBody
     ;
 
 extensionDecl
-    : EXT FN typeAnnotation '.' IDENTIFIER typeParams? '(' paramList? ')' (':' type_)? (ASYNC)? contractBlock? (block | ('=' | '=>') expression ';'?)
+    : EXT FN typeAnnotation DOT IDENTIFIER typeParams? parameterClause returnType? ASYNC? contractBlock? functionBody
+    ;
+
+parameterClause
+    : LPAREN paramList? RPAREN
+    ;
+
+returnType
+    : COLON type_
     ;
 
 paramList
-    : param (',' param)*
+    : param (COMMA param)*
     ;
 
 param
-    : IDENTIFIER ':' type_
+    : IDENTIFIER COLON type_
     ;
 
 typeParams
-    : '<' IDENTIFIER (',' IDENTIFIER)* '>'
+    : LT IDENTIFIER (COMMA IDENTIFIER)* GT
     ;
 
-// ---------------- CONTRACTS ----------------
+functionBody
+    : block
+    | (ASSIGN | ARROW) expression SEMICOLON?
+    ;
 
 contractBlock
-    : CONTRACT '{' contractClause* '}'
+    : CONTRACT LBRACE contractClause* RBRACE
     ;
 
 contractClause
-    : RETURNS '(' expression? ')' '=>' expression ';'
+    : RETURNS LPAREN expression? RPAREN ARROW expression SEMICOLON
     ;
-
-// ---------------- TYPES ----------------
 
 type_
     : typeAnnotation
     ;
 
 typeAnnotation
-    : IDENTIFIER typeArgs? '?'?
+    : IDENTIFIER typeArgs? QUESTION?
     ;
 
 typeArgs
-    : '<' typeAnnotation (',' typeAnnotation)* '>'
+    : LT typeAnnotation (COMMA typeAnnotation)* GT
     ;
 
-// ---------------- CLASSES ----------------
-
 classDecl
-    : CLASS IDENTIFIER '(' paramList? ')' (':' IDENTIFIER)? block?
+    : CLASS IDENTIFIER parameterClause (COLON IDENTIFIER)? block?
     ;
 
 structDecl
-    : STRUCT IDENTIFIER '(' paramList? ')' block?
+    : STRUCT IDENTIFIER parameterClause block?
     ;
 
 enumDecl
-    : ENUM IDENTIFIER typeParams? '{' enumCase* '}'
+    : ENUM IDENTIFIER typeParams? LBRACE enumCase* RBRACE
     ;
 
 enumCase
-    : IDENTIFIER ('(' paramList? ')')? ';'
+    : IDENTIFIER (LPAREN paramList? RPAREN)? SEMICOLON
     ;
 
 interfaceDecl
-    : INTERFACE IDENTIFIER '{' interfaceMember* '}'
+    : INTERFACE IDENTIFIER LBRACE interfaceMember* RBRACE
     ;
 
 interfaceMember
-    : FN IDENTIFIER '(' paramList? ')' (':' type_)? ';'
+    : FN IDENTIFIER parameterClause returnType? SEMICOLON
     ;
 
 contractDecl
@@ -223,7 +269,7 @@ whileStmt
     ;
 
 forStmt
-    : FOR '(' forInit? ';' expression? ';' expression? ')' block
+    : FOR LPAREN forInit? SEMICOLON expression? SEMICOLON expression? RPAREN block
     ;
 
 forInit
@@ -232,11 +278,11 @@ forInit
     ;
 
 variableBinding
-    : (LET | VAR) IDENTIFIER (':' type_)? '=' expression
+    : (LET | VAR) IDENTIFIER (COLON type_)? ASSIGN expression
     ;
 
 usingStmt
-    : USING (IDENTIFIER '=')? expression block
+    : USING (IDENTIFIER ASSIGN)? expression block
     ;
 
 tryStmt
@@ -244,7 +290,7 @@ tryStmt
     ;
 
 catchClause
-    : CATCH ('(' IDENTIFIER? ')')? block
+    : CATCH (LPAREN IDENTIFIER? RPAREN)? block
     ;
 
 finallyClause
@@ -252,41 +298,41 @@ finallyClause
     ;
 
 throwStmt
-    : THROW expression ';'?
+    : THROW expression SEMICOLON?
     ;
 
 returnStmt
-    : RETURN expression? ';'?
+    : RETURN expression? SEMICOLON?
     ;
 
 breakStmt
-    : BREAK ';'?
+    : BREAK SEMICOLON?
     ;
 
 continueStmt
-    : CONTINUE ';'?
+    : CONTINUE SEMICOLON?
     ;
 
 conditionStmt
-    : CONDITION '{' conditionClause* conditionElse? '}'
+    : CONDITION LBRACE conditionClause* conditionElse? RBRACE
     ;
 
 conditionClause
-    : WHEN expression '=>' block
+    : WHEN expression ARROW block
     ;
 
 conditionElse
-    : ELSE '=>' block
+    : ELSE ARROW block
     ;
 
 // ---------------- MATCH ----------------
 
 matchStmt
-    : MATCH expression '{' matchCase+ '}'
+    : MATCH expression LBRACE matchCase+ RBRACE
     ;
 
 matchCase
-    : pattern '=>' statement
+    : pattern ARROW statement
     ;
 
 pattern
@@ -301,20 +347,21 @@ literalPattern
     | STRING
     | FORMATSTRING
     | RAWSTRING
-    | BOOLEAN
+    | TRUE
+    | FALSE
     | NULL
     ;
 
 structPattern
-    : IDENTIFIER '(' (pattern (',' pattern)*)? ')'
+    : IDENTIFIER LPAREN (pattern (COMMA pattern)*)? RPAREN
     ;
 
 objectPattern
-    : '{' pairPattern (',' pairPattern)* '}'
+    : LBRACE pairPattern (COMMA pairPattern)* RBRACE
     ;
 
 pairPattern
-    : (STRING | IDENTIFIER) ':' pattern
+    : (STRING | IDENTIFIER) COLON pattern
     ;
 
 // ---------------- EXPRESSIONS ----------------
@@ -324,7 +371,16 @@ expression
     ;
 
 assignment
-    : conditional (( '=' | PLUS_ASSIGN | MINUS_ASSIGN | STAR_ASSIGN | SLASH_ASSIGN | PERCENT_ASSIGN ) expression)?
+    : conditional (assignmentOperator expression)?
+    ;
+
+assignmentOperator
+    : ASSIGN
+    | PLUS_ASSIGN
+    | MINUS_ASSIGN
+    | STAR_ASSIGN
+    | SLASH_ASSIGN
+    | PERCENT_ASSIGN
     ;
 
 conditional
@@ -332,48 +388,48 @@ conditional
     ;
 
 logicalOr
-    : logicalAnd ('||' logicalAnd)*
+    : logicalAnd (OR logicalAnd)*
     ;
 
 logicalAnd
-    : equality ('&&' equality)*
+    : equality (AND equality)*
     ;
 
 equality
-    : comparison (('==' | '!=') comparison)*
+    : comparison ((EQ | NOT_EQ) comparison)*
     ;
 
 comparison
-    : additive (( '<' | '<=' | '>' | '>=' | IS | NOTIS ) additive)*
+    : additive ((LT | LTE | GT | GTE | IS | NOTIS) additive)*
     ;
 
 additive
-    : multiplicative (('+' | '-') multiplicative)*
+    : multiplicative ((PLUS | MINUS) multiplicative)*
     ;
 
 multiplicative
-    : unary (('*' | '/' | '%') unary)*
+    : unary ((ASTERISK | SLASH | PERCENT) unary)*
     ;
 
 unary
-    : ('!' | '-' | AMPERSAND | '*') unary
+    : (BANG | MINUS | AMPERSAND | ASTERISK) unary
     | postfix
     ;
 
-AMPERSAND : '&';
-
 postfix
-    : primary (
-        '.' IDENTIFIER
-      | '[' expression ']'
-      | SAFE_DOT IDENTIFIER
-      | NON_NULL
-      | '(' argumentList? ')'
-    )*
+    : primary postfixPart*
+    ;
+
+postfixPart
+    : DOT IDENTIFIER
+    | SAFE_DOT IDENTIFIER
+    | LBRACKET expression RBRACKET
+    | NON_NULL
+    | LPAREN argumentList? RPAREN
     ;
 
 argumentList
-    : expression (',' expression)*
+    : expression (COMMA expression)*
     ;
 
 primary
@@ -381,25 +437,26 @@ primary
     | STRING
     | FORMATSTRING
     | RAWSTRING
-    | BOOLEAN
+    | TRUE
+    | FALSE
     | NULL
     | IDENTIFIER
     | arrayLiteral
     | objectLiteral
     | awaitExpr
-    | '(' expression ')'
+    | LPAREN expression RPAREN
     ;
 
 arrayLiteral
-    : '[' (expression (',' expression)*)? ']'
+    : LBRACKET (expression (COMMA expression)*)? RBRACKET
     ;
 
 objectLiteral
-    : '{' (pair (',' pair)*)? '}'
+    : LBRACE (pair (COMMA pair)*)? RBRACE
     ;
 
 pair
-    : (STRING | IDENTIFIER) ':' expression
+    : (STRING | IDENTIFIER) COLON expression
     ;
 
 awaitExpr

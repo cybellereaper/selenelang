@@ -1,0 +1,65 @@
+package examples
+
+// A whirlwind tour stitching together modules, structs, enums, and flow control.
+module toolbox {
+    fn greet(name: String): String => format("Welcome, {}", name);
+}
+
+struct Person(name: String, role: String) {
+    fn describe(): String {
+        return format("{} – {}", self.name, self.role);
+    }
+}
+
+enum Work {
+    Todo(task: String);
+    Done(task: String);
+}
+
+fn summarize(values: Array) {
+    var total = 0;
+    var i = 0;
+    while i < values.length {
+        total += values[i];
+        i += 1;
+    }
+    return { sum: total, average: total / values.length };
+}
+
+fn run(work: Work) {
+    match work {
+        Todo(task) => print("⏳ Todo =>", task);
+        Done(task) => print("✅ Done =>", task);
+    }
+}
+
+fn main() {
+    let crew = [
+        Person("Lyra", "maintainer"),
+        Person("Orion", "runtime"),
+        Person("Vega", "docs")
+    ];
+
+    for (let i = 0; i < crew.length; i += 1) {
+        let member = crew[i];
+        print(toolbox.greet(member.name));
+        print(member.describe());
+    }
+
+    let metrics = summarize([3, 4, 5, 6]);
+    print(format("sum={} average={}", metrics.sum, metrics.average));
+
+    condition {
+        when metrics.average > 4 => {
+            print("strong average");
+        }
+        else => {
+            print("needs improvement");
+        }
+    }
+
+    run(Work.Todo("Write parser docs"));
+    run(Work.Done("Ship formatter"));
+}
+
+main();

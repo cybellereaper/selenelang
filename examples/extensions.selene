@@ -1,5 +1,6 @@
 package examples
 
+// Extension functions for strings and integers.
 ext fn String.reverse(): String {
     var result = "";
     var index = this.length - 1;
@@ -14,9 +15,13 @@ ext fn String.isPalindrome(): Boolean = this == this.reverse();
 
 ext fn Int.squared(): Int = this * this;
 
-let word = "level";
-print(word.reverse());
-print(word.isPalindrome());
+fn main() {
+    let word = "level";
+    print(word.reverse());
+    print(word.isPalindrome());
 
-let value = 7;
-print(value.squared());
+    let value = 7;
+    print(value.squared());
+}
+
+main();

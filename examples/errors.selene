@@ -1,5 +1,6 @@
 package examples
 
+// using/try/catch/finally with explicit throw expressions.
 struct Trace(name: String) {
     fn close() {
         print("closing", self.name);
@@ -18,12 +19,16 @@ fn risky(flag: Boolean) {
     print("all good");
 }
 
-using scope = open("session.log") {
-    try {
-        risky(true);
-    } catch (err) {
-        print("caught:", err);
-    } finally {
-        print("finally always runs");
+fn main() {
+    using scope = open("session.log") {
+        try {
+            risky(true);
+        } catch (err) {
+            print("caught:", err);
+        } finally {
+            print("finally always runs");
+        }
     }
 }
+
+main();

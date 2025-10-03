@@ -1,18 +1,9 @@
 package examples
 
-let counter = 41;
-let handle = &counter;
-
+// Pointer semantics: address-of, dereference, and swapping via references.
 fn bump(value: Pointer) {
     *value += 1;
 }
-
-bump(handle);
-print("after bump:", counter);
-
-let alias = handle;
-*alias += 10;
-print("after alias:", counter);
 
 fn swap(a: Pointer, b: Pointer) {
     let temp = *a;
@@ -20,7 +11,20 @@ fn swap(a: Pointer, b: Pointer) {
     *b = temp;
 }
 
-let first = 5;
-let second = 12;
-swap(&first, &second);
-print("swapped:", first, second);
+fn main() {
+    let counter = 41;
+    let handle = &counter;
+    bump(handle);
+    print("after bump:", counter);
+
+    let alias = handle;
+    *alias += 10;
+    print("after alias:", counter);
+
+    let first = 5;
+    let second = 12;
+    swap(&first, &second);
+    print("swapped:", first, second);
+}
+
+main();

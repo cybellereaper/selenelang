@@ -42,7 +42,7 @@ Verify the installation by checking the version banner:
 selene --help
 ```
 
-You should see usage information describing the `run`, `tokens`, `fmt`, `build`, `transpile`, `init`, `deps`, and `lsp` subcommands.
+You should see usage information describing the `run`, `test`, `tokens`, `fmt`, `build`, `transpile`, `init`, `deps`, and `lsp` subcommands.
 
 ## Run your first script
 
@@ -70,16 +70,34 @@ Run the same program through the bytecode VM if you want to inspect or test the 
 selene run --vm examples/hello.selene
 ```
 
+Prefer a faster execution path? Use the new JIT engine to cache evaluation dispatch:
+
+```bash
+selene run --jit examples/hello.selene
+```
+
 Emit a bytecode listing for debugging:
 
 ```bash
 selene build --out hello.bc examples/hello.selene
 ```
 
+Package the script (and the JIT runtime) into a Windows executable for distribution:
+
+```bash
+selene build --windows-exe hello.exe examples/hello.selene
+```
+
 Format source files in place (omit `-w` to print the formatted result to STDOUT):
 
 ```bash
 selene fmt -w examples/*.selene
+```
+
+Exercise every bundled example through the interpreter, VM, or JIT backend:
+
+```bash
+selene test --mode all
 ```
 
 Generate Go scaffolding from Selene code:

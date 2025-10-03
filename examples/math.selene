@@ -1,15 +1,26 @@
-// Demonstrates Selene arithmetic helpers and reusable functions.
-let pi: Number = 314159 / 100000;
+package examples
 
-fn circleArea(radius: Number): Number => radius * radius * pi;
-fn circumference(radius: Number): Number => 2 * pi * radius;
+// Arithmetic helpers, constants, and modules working together.
+module geometry {
+    let constants = {
+        pi: 3.14159,
+        tau: 6.28318
+    };
 
-fn report(name: String, radius: Number) {
-    let area = circleArea(radius);
-    let edge = circumference(radius);
-    print(name + " => area=" + area + ", circumference=" + edge);
+    fn area(radius: Number): Number => constants.pi * radius * radius;
+    fn circumference(radius: Number): Number => constants.tau * radius / 2;
 }
 
-report("small", 2);
-report("medium", 5);
-report("large", 9);
+fn describeCircle(name: String, radius: Number) {
+    let area = geometry.area(radius);
+    let edge = geometry.circumference(radius);
+    print(format("{} => radius={} area={} circumference={}", name, radius, area, edge));
+}
+
+fn main() {
+    describeCircle("small", 2);
+    describeCircle("medium", 5.5);
+    describeCircle("large", 12);
+}
+
+main();
