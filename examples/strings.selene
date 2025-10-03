@@ -29,4 +29,3 @@ lines""";
     print(f"is ${name} a palindrome? ${name.isPalindrome():upper}");
 }
 
-main();

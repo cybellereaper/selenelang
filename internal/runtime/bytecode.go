@@ -117,7 +117,13 @@ func (r *Runtime) Compile(program *ast.Program) (*Chunk, error) {
 // RunChunk executes compiled bytecode within the runtime's environment.
 func (r *Runtime) RunChunk(chunk *Chunk) (Value, error) {
 	vm := &vm{chunk: chunk, env: r.env}
-	return vm.run()
+	result, err := vm.run()
+	if err != nil {
+		return nil, err
+	}
+	program := &ast.Program{Items: chunk.items}
+	analysis := AnalyzeMain(program)
+	return InvokeMainIfNeeded(r.env, analysis, result)
 }
 
 type vm struct {

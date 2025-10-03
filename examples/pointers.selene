@@ -27,4 +27,3 @@ fn main() {
     print("swapped:", first, second);
 }
 
-main();

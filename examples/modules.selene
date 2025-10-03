@@ -14,4 +14,3 @@ fn main() {
     print("tau ≈", consts.tau);
 }
 
-main();

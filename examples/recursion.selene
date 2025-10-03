@@ -23,4 +23,3 @@ fn main() {
     print("Fibonacci(8) = " + fib(8));
 }
 
-main();

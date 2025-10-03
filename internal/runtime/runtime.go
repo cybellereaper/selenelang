@@ -567,7 +567,12 @@ func (r *Runtime) Environment() *Environment {
 }
 
 func (r *Runtime) Run(program *ast.Program) (Value, error) {
-	return evalProgram(program, r.env)
+	analysis := AnalyzeMain(program)
+	result, err := evalProgram(program, r.env)
+	if err != nil {
+		return nil, err
+	}
+	return InvokeMainIfNeeded(r.env, analysis, result)
 }
 
 func evalProgram(program *ast.Program, env *Environment) (Value, error) {

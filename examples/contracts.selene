@@ -37,4 +37,3 @@ fn main() {
     print("within range? => " + validators.withinRange(clamped2, 0, 10));
 }
 
-main();
