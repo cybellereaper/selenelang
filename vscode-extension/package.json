@@ -70,8 +70,9 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
-    "eslint": "^8.57.0",
-    "vscode": "^1.1.42"
+    "@types/vscode": "^1.82.0",
+    "@vscode/test-electron": "^2.3.4",
+    "eslint": "^8.57.0"
   },
   "dependencies": {
     "vscode-languageclient": "^9.0.1"
