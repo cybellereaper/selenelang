@@ -9,8 +9,6 @@
   <a href="https://pkg.go.dev/github.com/cybellereaper/selenelang"><img src="https://pkg.go.dev/badge/github.com/cybellereaper/selenelang.svg" alt="Go Reference"></a>
 </p>
 
-> 🌙✨ Welcome to the Selene galaxy! The repository has been reorganized so every script, doc, and tool has a cozy constellation. This README doubles as a mission control dashboard complete with animated signposts.
-
 ## Table of contents
 
 1. [Orbit overview](#orbit-overview)
