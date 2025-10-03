@@ -1,5 +1,4 @@
-
-! [](assets/image.png)
+<table><img src="https://github.com/cybellereaper/selenelang/blob/main/assets/image.png" width="98" align="left"></table>
 
 # Selene Language Toolkit
 
