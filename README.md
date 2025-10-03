@@ -1,6 +1,6 @@
-<p align="center">
+<!-- <p align="center">
   <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNTFlNTh5amJ4aHZlYTUzajNjbHd2Nzl5d2c2dmVmeW1sb2xob2VhZyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/l3q2K5jinAlChoCLS/giphy.gif" width="160" alt="Moon orbit animation" />
-</p>
+</p> -->
 
 <h1 align="center">Selene Language Toolkit</h1>
 
@@ -28,9 +28,9 @@
 
 Selene is an experimental programming-language frontend written in Go. It packages the full toolchain needed to prototype new language ideas: a lexer, a Pratt parser that produces rich abstract syntax trees (ASTs), an interpreter-grade runtime, a bytecode compiler and virtual machine, an opinionated formatter, and an ergonomic CLI. Use Selene to iterate on language design, embed the runtime inside Go applications, or publish tooling such as language servers and transpilers.
 
-<div align="center">
+<!-- <div align="center">
   <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExazllM2JwOW5jM2lmMzc5a2FnaGcxZHBua2p5cmNwYm9sOWp2NmZuYSZlcD12MV9naWZzX3NlYXJjaCZjdD1n/3oEjI6SIIHBdRxXI40/giphy.gif" width="320" alt="Stars swirling animation" />
-</div>
+</div> -->
 
 ## Quick launch
 
