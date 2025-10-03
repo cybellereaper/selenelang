@@ -11,7 +11,9 @@ import (
 	"strings"
 
 	"selenelang/internal/ast"
+	buildwindows "selenelang/internal/build/windows"
 	"selenelang/internal/format"
+	"selenelang/internal/jit"
 	"selenelang/internal/lexer"
 	"selenelang/internal/lsp"
 	"selenelang/internal/parser"
@@ -70,13 +72,13 @@ func main() {
 func usage() {
 	fmt.Fprintln(os.Stderr, "usage: selene <command> [options]")
 	fmt.Fprintln(os.Stderr, "commands:")
-	fmt.Fprintln(os.Stderr, "  run [--tokens|--vm] <file> execute a Selene source file")
+	fmt.Fprintln(os.Stderr, "  run [--tokens|--vm|--jit] <file> execute a Selene source file")
 	fmt.Fprintln(os.Stderr, "  tokens <file>           dump the token stream for a file")
 	fmt.Fprintln(os.Stderr, "  init <module> [--name]  create a new Selene project")
 	fmt.Fprintln(os.Stderr, "  deps <subcommand>       manage project dependencies (add, list, verify)")
 	fmt.Fprintln(os.Stderr, "  lsp                    start the Selene language server on stdio")
 	fmt.Fprintln(os.Stderr, "  fmt [flags] <files>    format Selene source files")
-	fmt.Fprintln(os.Stderr, "  build [--out] <file>   compile Selene bytecode and optionally emit a listing")
+	fmt.Fprintln(os.Stderr, "  build [--out|--windows-exe] <file>   compile Selene bytecode, emit listings, or build Windows executables")
 	fmt.Fprintln(os.Stderr, "  transpile [flags] <file>  convert Selene sources to another language")
 }
 
@@ -89,6 +91,7 @@ func runCommand(args []string) error {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 	tokensFlag := fs.Bool("tokens", false, "print the token stream")
 	vmFlag := fs.Bool("vm", false, "execute using the Selene virtual machine")
+	jitFlag := fs.Bool("jit", false, "execute using the Selene JIT engine")
 	disFlag := fs.Bool("disassemble", false, "dump bytecode before executing with --vm")
 	fs.SetOutput(os.Stderr)
 	if err := fs.Parse(args); err != nil {
@@ -104,6 +107,20 @@ func runCommand(args []string) error {
 	rt := runtime.New()
 	if err := loadDependencies(rt, filename); err != nil {
 		return err
+	}
+	if *jitFlag {
+		program, _, err := parseFile(filename)
+		if err != nil {
+			return err
+		}
+		compiled, err := jit.Compile(program)
+		if err != nil {
+			return err
+		}
+		if _, err := compiled.Run(rt); err != nil {
+			return fmt.Errorf("jit error: %w", err)
+		}
+		return nil
 	}
 	if *vmFlag {
 		program, _, err := parseFile(filename)
@@ -186,6 +203,7 @@ func fmtCommand(args []string) error {
 func buildCommand(args []string) error {
 	fs := flag.NewFlagSet("build", flag.ContinueOnError)
 	out := fs.String("out", "", "write bytecode listing to the provided file")
+	windowsExe := fs.String("windows-exe", "", "produce a Windows executable that runs via the JIT engine")
 	fs.SetOutput(os.Stderr)
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -195,13 +213,23 @@ func buildCommand(args []string) error {
 	}
 	filename := fs.Arg(0)
 	rt := runtime.New()
-	program, _, err := parseFile(filename)
+	program, source, err := parseFile(filename)
 	if err != nil {
 		return err
 	}
 	chunk, err := rt.Compile(program)
 	if err != nil {
 		return err
+	}
+	if *windowsExe != "" {
+		abs, err := filepath.Abs(filename)
+		if err != nil {
+			return err
+		}
+		startDir := filepath.Dir(abs)
+		if err := buildwindows.BuildExecutable(startDir, filepath.Base(filename), source, *windowsExe); err != nil {
+			return err
+		}
 	}
 	listing := chunk.Disassemble()
 	if *out != "" {

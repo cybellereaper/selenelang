@@ -622,6 +622,14 @@ func evalProgramItem(item ast.ProgramItem, env *Environment) (Value, error) {
 	}
 }
 
+// ExecuteProgramItem evaluates a top-level program item within the provided environment.
+// It is a thin wrapper around the interpreter's internal evalProgramItem helper so that
+// other packages (notably the JIT backend) can reuse the existing semantics without
+// re-implementing the large statement/type switch.
+func ExecuteProgramItem(item ast.ProgramItem, env *Environment) (Value, error) {
+	return evalProgramItem(item, env)
+}
+
 func evalStatement(stmt ast.Statement, env *Environment) (Value, error) {
 	switch node := stmt.(type) {
 	case *ast.ExpressionStatement:
@@ -711,6 +719,11 @@ func evalStatement(stmt ast.Statement, env *Environment) (Value, error) {
 	default:
 		return nil, fmt.Errorf("runtime does not support statement %T", stmt)
 	}
+}
+
+// ExecuteStatement evaluates a statement node in the provided environment.
+func ExecuteStatement(stmt ast.Statement, env *Environment) (Value, error) {
+	return evalStatement(stmt, env)
 }
 
 func evalBlock(block *ast.BlockStatement, env *Environment) (Value, error) {
@@ -1605,6 +1618,12 @@ func evalModuleDeclaration(module *ast.ModuleDeclaration, env *Environment) (Val
 	moduleVal := &Module{Name: module.Name.Name, Exports: exports}
 	env.Set(module.Name.Name, moduleVal)
 	return moduleVal, nil
+}
+
+// ExecuteModuleDeclaration exposes module evaluation for external consumers like the JIT
+// compiler while preserving the interpreter's semantics.
+func ExecuteModuleDeclaration(module *ast.ModuleDeclaration, env *Environment) (Value, error) {
+	return evalModuleDeclaration(module, env)
 }
 
 func evalImportDeclaration(imp *ast.ImportDeclaration, env *Environment) (Value, error) {

@@ -70,10 +70,22 @@ Run the same program through the bytecode VM if you want to inspect or test the 
 selene run --vm examples/hello.selene
 ```
 
+Prefer a faster execution path? Use the new JIT engine to cache evaluation dispatch:
+
+```bash
+selene run --jit examples/hello.selene
+```
+
 Emit a bytecode listing for debugging:
 
 ```bash
 selene build --out hello.bc examples/hello.selene
+```
+
+Package the script (and the JIT runtime) into a Windows executable for distribution:
+
+```bash
+selene build --windows-exe hello.exe examples/hello.selene
 ```
 
 Format source files in place (omit `-w` to print the formatted result to STDOUT):
