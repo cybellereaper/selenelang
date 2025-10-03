@@ -1,0 +1,29 @@
+package examples
+
+fn count(limit: Int, out: Channel) {
+    var i = 0;
+    while i < limit {
+        out.send(f"tick #${i}");
+        i += 1;
+    }
+    out.close();
+}
+
+let updates = channel();
+spawn(count, 4, updates);
+
+try {
+    while true {
+        let message = await updates;
+        print(message);
+    }
+} catch (err) {
+    print("updates exhausted");
+}
+
+fn slowAdd(a: Int, b: Int): Int {
+    return a + b;
+}
+
+let task = spawn(slowAdd, 20, 22);
+print("sum from task:", await task);

@@ -1,0 +1,16 @@
+package main;
+
+import math "github.com/selene-lang/richmath";
+
+fn describe(values: Array) {
+    print("values:", values);
+    print("sum:", math.sum(values));
+    print("average:", math.average(values));
+    print("running mean:", math.stats.runningMean(values));
+}
+
+fn main() {
+    describe([2, 4, 6, 8, 10]);
+}
+
+main();
