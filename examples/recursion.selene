@@ -1,0 +1,11 @@
+fn factorial(n: Number) {
+    match n {
+        0 => 1;
+        1 => 1;
+        value => value * factorial(value - 1);
+    }
+}
+
+print("Factorial results:");
+print("5! = " + factorial(5));
+print("7! = " + factorial(7));
