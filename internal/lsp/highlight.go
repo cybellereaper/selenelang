@@ -29,10 +29,11 @@ func safeUint32(value int) (uint32, bool) {
 	if value < 0 {
 		return 0, false
 	}
-	if uint64(value) > maxUint32 {
+	converted := uint64(value)
+	if converted > maxUint32 {
 		return 0, false
 	}
-	return uint32(value), true
+	return uint32(converted), true
 }
 
 // NewHighlighter constructs a semantic token highlighter with Selene token types.
