@@ -4,7 +4,9 @@ package runtime
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"math"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -143,11 +145,20 @@ func (a *Array) Type() string { return "Array" }
 
 // Inspect returns a human-readable representation of Array.
 func (a *Array) Inspect() string {
-	parts := make([]string, len(a.Elements))
-	for i, el := range a.Elements {
-		parts[i] = el.Inspect()
+	if len(a.Elements) == 0 {
+		return "[]"
 	}
-	return "[" + strings.Join(parts, ", ") + "]"
+
+	var b strings.Builder
+	b.WriteByte('[')
+	for i, el := range a.Elements {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(el.Inspect())
+	}
+	b.WriteByte(']')
+	return b.String()
 }
 
 // Object models a dynamic map of string keys to values.
@@ -160,11 +171,25 @@ func (o *Object) Type() string { return "Object" }
 
 // Inspect returns a human-readable representation of Object.
 func (o *Object) Inspect() string {
-	parts := make([]string, 0, len(o.Properties))
-	for k, v := range o.Properties {
-		parts = append(parts, fmt.Sprintf("%s: %s", k, v.Inspect()))
+	if len(o.Properties) == 0 {
+		return "{}"
 	}
-	return "{" + strings.Join(parts, ", ") + "}"
+
+	keys := slices.Collect(maps.Keys(o.Properties))
+	sort.Strings(keys)
+
+	var b strings.Builder
+	b.WriteByte('{')
+	for i, k := range keys {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(k)
+		b.WriteString(": ")
+		b.WriteString(o.Properties[k].Inspect())
+	}
+	b.WriteByte('}')
+	return b.String()
 }
 
 // Module captures exported bindings from a loaded module.
@@ -175,11 +200,11 @@ type Module struct {
 
 // NewModule constructs a module value with the provided exports.
 func NewModule(name string, exports map[string]Value) *Module {
-	copy := make(map[string]Value, len(exports))
-	for k, v := range exports {
-		copy[k] = v
+	clone := maps.Clone(exports)
+	if clone == nil {
+		clone = make(map[string]Value)
 	}
-	return &Module{Name: name, Exports: copy}
+	return &Module{Name: name, Exports: clone}
 }
 
 // Type implements the Value interface for Module.
@@ -187,16 +212,9 @@ func (m *Module) Type() string { return "Module" }
 
 // Inspect returns a human-readable representation of Module.
 func (m *Module) Inspect() string {
-	keys := make([]string, 0, len(m.Exports))
-	for k := range m.Exports {
-		keys = append(keys, k)
-	}
+	keys := slices.Collect(maps.Keys(m.Exports))
 	sort.Strings(keys)
-	parts := make([]string, len(keys))
-	for i, k := range keys {
-		parts[i] = k
-	}
-	return fmt.Sprintf("<module %s [%s]>", m.Name, strings.Join(parts, ", "))
+	return fmt.Sprintf("<module %s [%s]>", m.Name, strings.Join(keys, ", "))
 }
 
 // StructType describes the shape of a user-defined struct.
@@ -226,16 +244,22 @@ func (s *StructInstance) Type() string { return s.Definition.Name }
 
 // Inspect returns a human-readable representation of StructInstance.
 func (s *StructInstance) Inspect() string {
-	keys := make([]string, 0, len(s.Fields))
-	for k := range s.Fields {
-		keys = append(keys, k)
-	}
+	keys := slices.Collect(maps.Keys(s.Fields))
 	sort.Strings(keys)
-	parts := make([]string, len(keys))
+
+	var b strings.Builder
+	b.WriteString(s.Definition.Name)
+	b.WriteByte('{')
 	for i, k := range keys {
-		parts[i] = fmt.Sprintf("%s: %s", k, s.Fields[k].Inspect())
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(k)
+		b.WriteString(": ")
+		b.WriteString(s.Fields[k].Inspect())
 	}
-	return fmt.Sprintf("%s{%s}", s.Definition.Name, strings.Join(parts, ", "))
+	b.WriteByte('}')
+	return b.String()
 }
 
 // ClassType represents the metadata for a Selene class.
@@ -266,16 +290,22 @@ func (c *ClassInstance) Type() string { return c.Definition.Name }
 
 // Inspect returns a human-readable representation of ClassInstance.
 func (c *ClassInstance) Inspect() string {
-	keys := make([]string, 0, len(c.Fields))
-	for k := range c.Fields {
-		keys = append(keys, k)
-	}
+	keys := slices.Collect(maps.Keys(c.Fields))
 	sort.Strings(keys)
-	parts := make([]string, len(keys))
+
+	var b strings.Builder
+	b.WriteString(c.Definition.Name)
+	b.WriteByte('{')
 	for i, k := range keys {
-		parts[i] = fmt.Sprintf("%s: %s", k, c.Fields[k].Inspect())
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(k)
+		b.WriteString(": ")
+		b.WriteString(c.Fields[k].Inspect())
 	}
-	return fmt.Sprintf("%s{%s}", c.Definition.Name, strings.Join(parts, ", "))
+	b.WriteByte('}')
+	return b.String()
 }
 
 func (c *ClassType) lookupMethod(name string) (*Function, bool) {
@@ -316,10 +346,7 @@ func (e *EnumType) Type() string { return "Enum" }
 
 // Inspect returns a human-readable representation of EnumType.
 func (e *EnumType) Inspect() string {
-	keys := make([]string, 0, len(e.Cases))
-	for k := range e.Cases {
-		keys = append(keys, k)
-	}
+	keys := slices.Collect(maps.Keys(e.Cases))
 	sort.Strings(keys)
 	return fmt.Sprintf("<enum %s [%s]>", e.Name, strings.Join(keys, ", "))
 }
@@ -448,10 +475,7 @@ func (c *Contract) Type() string { return "Contract" }
 
 // Inspect returns a human-readable representation of Contract.
 func (c *Contract) Inspect() string {
-	keys := make([]string, 0, len(c.Exports))
-	for k := range c.Exports {
-		keys = append(keys, k)
-	}
+	keys := slices.Collect(maps.Keys(c.Exports))
 	sort.Strings(keys)
 	return fmt.Sprintf("<contract %s [%s]>", c.Name, strings.Join(keys, ", "))
 }
@@ -467,10 +491,7 @@ func (i *InterfaceType) Type() string { return "Interface" }
 
 // Inspect returns a human-readable representation of InterfaceType.
 func (i *InterfaceType) Inspect() string {
-	keys := make([]string, 0, len(i.Methods))
-	for k := range i.Methods {
-		keys = append(keys, k)
-	}
+	keys := slices.Collect(maps.Keys(i.Methods))
 	sort.Strings(keys)
 	return fmt.Sprintf("<interface %s [%s]>", i.Name, strings.Join(keys, ", "))
 }

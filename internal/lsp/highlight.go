@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"slices"
 	"sort"
 	"strings"
 
@@ -51,7 +52,7 @@ func NewHighlighter() *Highlighter {
 
 // Legend returns the supported semantic token types and modifiers.
 func (h *Highlighter) Legend() (tokenTypes []string, tokenModifiers []string) {
-	return append([]string(nil), h.tokenTypes...), []string{}
+	return slices.Clone(h.tokenTypes), []string{}
 }
 
 // Encode builds semantic tokens for an entire document snapshot.
