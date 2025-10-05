@@ -494,8 +494,8 @@ func validateLSPArgs(args []string) error {
 
 func depsAdd(args []string) error {
 	fs := flag.NewFlagSet("deps add", flag.ContinueOnError)
-	srcPath := fs.String("path", "", "path to the dependency sources to vendor")
-	sourceURL := fs.String("source", "", "canonical repository URL for auditing")
+	srcPath := fs.String("path", "", "path to dependency sources (optional when using --source)")
+	sourceURL := fs.String("source", "", "repository URL or module mirror used to fetch sources")
 	fs.SetOutput(os.Stderr)
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -532,7 +532,7 @@ func depsAdd(args []string) error {
 	if err := project.SaveLockfile(root, lockfile); err != nil {
 		return err
 	}
-	fmt.Fprintf(os.Stdout, "added %s %s (checksum %s)\n", module, version, lockEntry.Checksum)
+	fmt.Fprintf(os.Stdout, "added %s %s (checksum %s, vendor %s)\n", module, version, lockEntry.Checksum, lockEntry.Vendor)
 	return nil
 }
 

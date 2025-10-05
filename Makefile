@@ -1,8 +1,9 @@
-.PHONY: fmt vet lint test tidy coverage ci help
+.PHONY: fmt vet lint test tidy coverage vulncheck ci help
 
 GOFMT ?= gofmt
 GOTEST ?= go test
 GOVET ?= go vet
+GOVULNCHECK ?= govulncheck
 
 GOFMT_FLAGS ?= -w -s
 GOTEST_FLAGS ?= -race -shuffle=on -count=1
@@ -24,6 +25,13 @@ tidy: ## Tidy module dependencies
 coverage: ## Generate coverage profile and HTML report
 	@$(GOTEST) -coverprofile=coverage.out ./...
 	@go tool cover -html=coverage.out -o coverage.html
+
+vulncheck: ## Run govulncheck against all packages
+	@if ! command -v $(GOVULNCHECK) >/dev/null 2>&1; then \
+	echo "govulncheck not installed. Install with 'go install golang.org/x/vuln/cmd/govulncheck@latest'"; \
+	exit 1; \
+	fi
+	@$(GOVULNCHECK) ./...
 
 ci: ## Run vet and test (useful for CI pipelines)
 	@$(MAKE) vet
