@@ -34,6 +34,23 @@ Selene is an experimental programming-language frontend written in Go. It packag
 
 > 🚀 **Launch checklist:** Go 1.25.1+, a POSIX shell, and curiosity.
 
+### Download a release build
+
+Prebuilt archives live on the [GitHub Releases](https://github.com/cybellereaper/selenelang/releases) page for Linux, macOS, and Windows.
+Grab the archive that matches your platform, unpack it, and place the `selene` (or `selene.exe`) binary somewhere on your `PATH`:
+
+```bash
+# Linux / macOS
+tar -xzf selene-linux-amd64.tar.gz
+sudo install selene-linux-amd64/selene /usr/local/bin/selene
+
+# Windows (PowerShell)
+Expand-Archive selene-windows-amd64.zip
+Move-Item selene-windows-amd64\selene.exe "C:\\Program Files\\Selene\\selene.exe"
+```
+
+### Build from source
+
 ```bash
 git clone https://github.com/cybellereaper/selenelang.git
 cd selenelang
@@ -42,7 +59,7 @@ go build ./...
 go install ./cmd/selene
 ```
 
-Fire up the CLI to verify the install:
+Fire up the CLI to verify either install path:
 
 ```bash
 selene --help
