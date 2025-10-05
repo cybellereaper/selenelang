@@ -293,19 +293,27 @@ func fmtCommand(args []string) error {
 	if fs.NArg() == 0 {
 		return errors.New("fmt requires at least one file")
 	}
+	root, err := projectRootOrWD()
+	if err != nil {
+		return err
+	}
 	for i := 0; i < fs.NArg(); i++ {
 		filename := fs.Arg(i)
-		data, err := os.ReadFile(filename)
+		resolved, err := resolvePathWithinRoot(root, filename)
+		if err != nil {
+			return err
+		}
+		data, err := os.ReadFile(resolved)
 		if err != nil {
 			return err
 		}
 		formatted, err := format.Source(string(data))
 		if err != nil {
-			return fmt.Errorf("%s: %w", filename, err)
+			return fmt.Errorf("%s: %w", resolved, err)
 		}
 		if *write {
 			if string(data) != formatted {
-				if err := os.WriteFile(filename, []byte(formatted), 0o644); err != nil {
+				if err := writeFileSecure(resolved, []byte(formatted)); err != nil {
 					return err
 				}
 			}
@@ -313,7 +321,7 @@ func fmtCommand(args []string) error {
 		}
 		if *list {
 			if string(data) != formatted {
-				fmt.Fprintln(os.Stdout, filename)
+				fmt.Fprintln(os.Stdout, resolved)
 			}
 			continue
 		}
@@ -321,7 +329,7 @@ func fmtCommand(args []string) error {
 			if i > 0 {
 				fmt.Fprintln(os.Stdout)
 			}
-			fmt.Fprintf(os.Stdout, "// %s\n", filename)
+			fmt.Fprintf(os.Stdout, "// %s\n", resolved)
 		}
 		fmt.Fprint(os.Stdout, formatted)
 	}
@@ -339,9 +347,17 @@ func buildCommand(args []string) error {
 	if fs.NArg() == 0 {
 		return errors.New("build requires a source file")
 	}
+	root, err := projectRootOrWD()
+	if err != nil {
+		return err
+	}
 	filename := fs.Arg(0)
+	sourcePath, err := resolvePathWithinRoot(root, filename)
+	if err != nil {
+		return err
+	}
 	rt := runtime.New()
-	program, source, err := toolchain.ParseFile(filename)
+	program, source, err := toolchain.ParseFile(sourcePath)
 	if err != nil {
 		return err
 	}
@@ -350,18 +366,22 @@ func buildCommand(args []string) error {
 		return err
 	}
 	if *windowsExe != "" {
-		abs, err := filepath.Abs(filename)
+		exePath, err := resolvePathWithinRoot(root, *windowsExe)
 		if err != nil {
 			return err
 		}
-		startDir := filepath.Dir(abs)
-		if err := buildwindows.BuildExecutable(startDir, filepath.Base(filename), source, *windowsExe); err != nil {
+		startDir := filepath.Dir(sourcePath)
+		if err := buildwindows.BuildExecutable(startDir, filepath.Base(sourcePath), source, exePath); err != nil {
 			return err
 		}
 	}
 	listing := chunk.Disassemble()
 	if *out != "" {
-		return os.WriteFile(*out, []byte(listing), 0o644)
+		outPath, err := resolvePathWithinRoot(root, *out)
+		if err != nil {
+			return err
+		}
+		return writeFileSecure(outPath, []byte(listing))
 	}
 	fmt.Print(listing)
 	return nil
@@ -378,8 +398,16 @@ func transpileCommand(args []string) error {
 	if fs.NArg() == 0 {
 		return errors.New("transpile requires a source file")
 	}
+	root, err := projectRootOrWD()
+	if err != nil {
+		return err
+	}
 	filename := fs.Arg(0)
-	program, _, err := toolchain.ParseFile(filename)
+	resolved, err := resolvePathWithinRoot(root, filename)
+	if err != nil {
+		return err
+	}
+	program, _, err := toolchain.ParseFile(resolved)
 	if err != nil {
 		return err
 	}
@@ -394,7 +422,11 @@ func transpileCommand(args []string) error {
 		return err
 	}
 	if *out != "" {
-		return os.WriteFile(*out, []byte(output), 0o644)
+		outPath, err := resolvePathWithinRoot(root, *out)
+		if err != nil {
+			return err
+		}
+		return writeFileSecure(outPath, []byte(output))
 	}
 	fmt.Print(output)
 	return nil
@@ -434,18 +466,33 @@ func initCommand(args []string) error {
 	if err := project.SaveManifest(cwd, manifest); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Join(cwd, "src"), 0o755); err != nil {
+	srcDir, err := project.ResolveUnderRoot(cwd, "src")
+	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Join(cwd, "examples"), 0o755); err != nil {
+	if err := mkdirAllSecure(srcDir); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Join(cwd, "docs"), 0o755); err != nil {
+	examplesDir, err := project.ResolveUnderRoot(cwd, "examples")
+	if err != nil {
+		return err
+	}
+	if err := mkdirAllSecure(examplesDir); err != nil {
+		return err
+	}
+	docsDir, err := project.ResolveUnderRoot(cwd, "docs")
+	if err != nil {
+		return err
+	}
+	if err := mkdirAllSecure(docsDir); err != nil {
 		return err
 	}
 	mainSource := "package main;\n\nfn main() {\n    print(\"Hello from " + projectName + "!\");\n}\n"
-	entryPath := filepath.Join(cwd, "src", "main.selene")
-	if err := os.WriteFile(entryPath, []byte(mainSource), 0o644); err != nil {
+	entryPath, err := project.ResolveUnderRoot(cwd, filepath.Join("src", "main.selene"))
+	if err != nil {
+		return err
+	}
+	if err := writeFileSecure(entryPath, []byte(mainSource)); err != nil {
 		return err
 	}
 	fmt.Fprintf(os.Stdout, "initialized Selene module %s\n", modulePath)
@@ -588,7 +635,10 @@ func depsVerify(args []string) error {
 		if !ok {
 			return fmt.Errorf("dependency %s is missing from selene.lock", module)
 		}
-		vendorPath := filepath.Join(root, locked.Vendor)
+		vendorPath, err := project.ResolveUnderRoot(root, locked.Vendor)
+		if err != nil {
+			return err
+		}
 		if err := project.VerifyChecksum(vendorPath, locked.Checksum); err != nil {
 			return fmt.Errorf("%s: %w", module, err)
 		}
@@ -598,15 +648,63 @@ func depsVerify(args []string) error {
 }
 
 func dumpTokens(filename string) error {
-	content, err := os.ReadFile(filename)
+	root, err := projectRootOrWD()
 	if err != nil {
-		return fmt.Errorf("failed to read %s: %w", filename, err)
+		return err
+	}
+	resolved, err := resolvePathWithinRoot(root, filename)
+	if err != nil {
+		return err
+	}
+	content, err := os.ReadFile(resolved)
+	if err != nil {
+		return fmt.Errorf("failed to read %s: %w", resolved, err)
 	}
 	l := lexer.New(string(content))
 	for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
 		fmt.Printf("%s\t%q\n", tok.Type, tok.Literal)
 	}
 	return nil
+}
+
+func projectRootOrWD() (string, error) {
+	wd := mustGetwd()
+	root, err := project.FindRoot(wd)
+	if err != nil {
+		if errors.Is(err, iofs.ErrNotExist) {
+			return wd, nil
+		}
+		return "", err
+	}
+	return root, nil
+}
+
+func resolvePathWithinRoot(root, candidate string) (string, error) {
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return "", err
+	}
+	absCandidate, err := filepath.Abs(candidate)
+	if err != nil {
+		return "", err
+	}
+	rel, err := filepath.Rel(absRoot, absCandidate)
+	if err != nil {
+		return "", err
+	}
+	rel = filepath.Clean(rel)
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return "", fmt.Errorf("path %s escapes project root %s", absCandidate, absRoot)
+	}
+	return project.ResolveUnderRoot(absRoot, rel)
+}
+
+func writeFileSecure(path string, data []byte) error {
+	return os.WriteFile(path, data, 0o600)
+}
+
+func mkdirAllSecure(path string) error {
+	return os.MkdirAll(path, 0o750)
 }
 
 func mustGetwd() string {

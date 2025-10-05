@@ -17,8 +17,11 @@ import (
 
 // EnsureVendorTree prepares the vendor directory under the root.
 func EnsureVendorTree(root string) (string, error) {
-	vendorPath := filepath.Join(root, VendorDirectory)
-	if err := os.MkdirAll(vendorPath, 0o755); err != nil {
+	vendorPath, err := ResolveUnderRoot(root, VendorDirectory)
+	if err != nil {
+		return "", err
+	}
+	if err := os.MkdirAll(vendorPath, 0o750); err != nil {
 		return "", err
 	}
 	return vendorPath, nil
@@ -26,45 +29,69 @@ func EnsureVendorTree(root string) (string, error) {
 
 // CopyIntoVendor copies the contents of src into the destination directory.
 func CopyIntoVendor(src, dest string) error {
-	if err := os.RemoveAll(dest); err != nil {
+	absSrc, err := filepath.Abs(src)
+	if err != nil {
 		return err
 	}
-	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+	absDest, err := filepath.Abs(dest)
+	if err != nil {
+		return err
+	}
+	if err := os.RemoveAll(absDest); err != nil {
+		return err
+	}
+	return filepath.WalkDir(absSrc, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		rel, err := filepath.Rel(src, path)
+		resolvedPath, err := filepath.Abs(path)
 		if err != nil {
 			return err
 		}
-		target := filepath.Join(dest, rel)
+		rel, err := filepath.Rel(absSrc, resolvedPath)
+		if err != nil {
+			return err
+		}
+		target, err := ResolveUnderRoot(absDest, rel)
+		if err != nil {
+			return err
+		}
 		if d.IsDir() {
 			if rel == "." {
-				return os.MkdirAll(dest, 0o755)
+				return os.MkdirAll(absDest, 0o750)
 			}
-			return os.MkdirAll(target, 0o755)
+			return os.MkdirAll(target, 0o750)
 		}
 		if !d.Type().IsRegular() {
 			return nil
 		}
-		if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(target), 0o750); err != nil {
 			return err
 		}
-		in, err := os.Open(path)
-		if err != nil {
-			return err
-		}
-		defer in.Close()
-		out, err := os.Create(target)
-		if err != nil {
-			return err
-		}
-		if _, err := io.Copy(out, in); err != nil {
-			out.Close()
-			return err
-		}
-		return out.Close()
+		return copyFile(resolvedPath, target)
 	})
+}
+
+func copyFile(src, dest string) (err error) {
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	out, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		cerr := out.Close()
+		if err == nil {
+			err = cerr
+		}
+	}()
+	if _, err = io.Copy(out, in); err != nil {
+		return err
+	}
+	return nil
 }
 
 // HashDirectory produces a deterministic sha256 digest for the directory contents.

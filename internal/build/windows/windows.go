@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 )
 
@@ -65,7 +66,16 @@ func BuildExecutable(startDir, sourceName, sourceCode, output string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(absOut), 0o755); err != nil {
+	relOut, err := filepath.Rel(moduleRoot, absOut)
+	if err != nil {
+		return err
+	}
+	relOut = filepath.Clean(relOut)
+	if relOut == ".." || strings.HasPrefix(relOut, ".."+string(os.PathSeparator)) {
+		return fmt.Errorf("output path %s escapes module root %s", absOut, moduleRoot)
+	}
+	absOut = filepath.Join(moduleRoot, relOut)
+	if err := os.MkdirAll(filepath.Dir(absOut), 0o750); err != nil {
 		return err
 	}
 	workdir, err := os.MkdirTemp(moduleRoot, "selene-win-")
@@ -83,11 +93,19 @@ func BuildExecutable(startDir, sourceName, sourceCode, output string) error {
 		return err
 	}
 	mainFile := filepath.Join(workdir, "main.go")
-	if err := os.WriteFile(mainFile, buf.Bytes(), 0o644); err != nil {
+	if err := os.WriteFile(mainFile, buf.Bytes(), 0o600); err != nil {
 		return err
 	}
 
-	cmd := exec.Command("go", "build", "-o", absOut, mainFile)
+	relMain, err := filepath.Rel(moduleRoot, mainFile)
+	if err != nil {
+		return err
+	}
+	relMain = filepath.Clean(relMain)
+	if relMain == ".." || strings.HasPrefix(relMain, ".."+string(os.PathSeparator)) {
+		return fmt.Errorf("temporary build file escaped module root: %s", mainFile)
+	}
+	cmd := exec.Command("go", "build", "-o", absOut, relMain)
 	cmd.Dir = moduleRoot
 	cmd.Env = append(os.Environ(), "GOOS=windows", "GOARCH=amd64")
 	buildOutput, err := cmd.CombinedOutput()
