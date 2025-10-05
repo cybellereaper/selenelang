@@ -4,8 +4,8 @@ package runtime
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"math"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -116,10 +116,15 @@ func (e *ErrorValue) Type() string { return "Error" }
 
 // Inspect returns a human-readable representation of ErrorValue.
 func (e *ErrorValue) Inspect() string {
+	b := borrowBuilder()
+	b.WriteString("<error ")
+	b.WriteString(e.Message)
 	if e.Cause != nil {
-		return fmt.Sprintf("<error %s : %s>", e.Message, e.Cause.Inspect())
+		b.WriteString(" : ")
+		b.WriteString(e.Cause.Inspect())
 	}
-	return fmt.Sprintf("<error %s>", e.Message)
+	b.WriteByte('>')
+	return finishBuilder(b)
 }
 
 func toErrorValue(val Value) *ErrorValue {
@@ -143,11 +148,21 @@ func (a *Array) Type() string { return "Array" }
 
 // Inspect returns a human-readable representation of Array.
 func (a *Array) Inspect() string {
-	parts := make([]string, len(a.Elements))
-	for i, el := range a.Elements {
-		parts[i] = el.Inspect()
+	if len(a.Elements) == 0 {
+		return "[]"
 	}
-	return "[" + strings.Join(parts, ", ") + "]"
+
+	b := borrowBuilder()
+	b.Grow(1 + len(a.Elements)*4)
+	b.WriteByte('[')
+	for i, el := range a.Elements {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(el.Inspect())
+	}
+	b.WriteByte(']')
+	return finishBuilder(b)
 }
 
 // Object models a dynamic map of string keys to values.
@@ -160,11 +175,7 @@ func (o *Object) Type() string { return "Object" }
 
 // Inspect returns a human-readable representation of Object.
 func (o *Object) Inspect() string {
-	parts := make([]string, 0, len(o.Properties))
-	for k, v := range o.Properties {
-		parts = append(parts, fmt.Sprintf("%s: %s", k, v.Inspect()))
-	}
-	return "{" + strings.Join(parts, ", ") + "}"
+	return inspectFields("", o.Properties)
 }
 
 // Module captures exported bindings from a loaded module.
@@ -175,11 +186,11 @@ type Module struct {
 
 // NewModule constructs a module value with the provided exports.
 func NewModule(name string, exports map[string]Value) *Module {
-	copy := make(map[string]Value, len(exports))
-	for k, v := range exports {
-		copy[k] = v
+	clone := maps.Clone(exports)
+	if clone == nil {
+		clone = make(map[string]Value)
 	}
-	return &Module{Name: name, Exports: copy}
+	return &Module{Name: name, Exports: clone}
 }
 
 // Type implements the Value interface for Module.
@@ -187,16 +198,21 @@ func (m *Module) Type() string { return "Module" }
 
 // Inspect returns a human-readable representation of Module.
 func (m *Module) Inspect() string {
-	keys := make([]string, 0, len(m.Exports))
-	for k := range m.Exports {
-		keys = append(keys, k)
+	keys := sortedKeys(m.Exports)
+
+	b := borrowBuilder()
+	b.Grow(len(m.Name) + len(keys)*4 + 10)
+	b.WriteString("<module ")
+	b.WriteString(m.Name)
+	b.WriteString(" [")
+	for i, key := range keys {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(key)
 	}
-	sort.Strings(keys)
-	parts := make([]string, len(keys))
-	for i, k := range keys {
-		parts[i] = k
-	}
-	return fmt.Sprintf("<module %s [%s]>", m.Name, strings.Join(parts, ", "))
+	b.WriteString("]>")
+	return finishBuilder(b)
 }
 
 // StructType describes the shape of a user-defined struct.
@@ -212,7 +228,11 @@ func (s *StructType) Type() string { return "Struct" }
 
 // Inspect returns a human-readable representation of StructType.
 func (s *StructType) Inspect() string {
-	return fmt.Sprintf("<struct %s>", s.Name)
+	b := borrowBuilder()
+	b.WriteString("<struct ")
+	b.WriteString(s.Name)
+	b.WriteByte('>')
+	return finishBuilder(b)
 }
 
 // StructInstance stores field values for a struct.
@@ -226,16 +246,7 @@ func (s *StructInstance) Type() string { return s.Definition.Name }
 
 // Inspect returns a human-readable representation of StructInstance.
 func (s *StructInstance) Inspect() string {
-	keys := make([]string, 0, len(s.Fields))
-	for k := range s.Fields {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	parts := make([]string, len(keys))
-	for i, k := range keys {
-		parts[i] = fmt.Sprintf("%s: %s", k, s.Fields[k].Inspect())
-	}
-	return fmt.Sprintf("%s{%s}", s.Definition.Name, strings.Join(parts, ", "))
+	return inspectFields(s.Definition.Name, s.Fields)
 }
 
 // ClassType represents the metadata for a Selene class.
@@ -252,7 +263,11 @@ func (c *ClassType) Type() string { return "Class" }
 
 // Inspect returns a human-readable representation of ClassType.
 func (c *ClassType) Inspect() string {
-	return fmt.Sprintf("<class %s>", c.Name)
+	b := borrowBuilder()
+	b.WriteString("<class ")
+	b.WriteString(c.Name)
+	b.WriteByte('>')
+	return finishBuilder(b)
 }
 
 // ClassInstance stores fields and methods for a class instance.
@@ -266,16 +281,7 @@ func (c *ClassInstance) Type() string { return c.Definition.Name }
 
 // Inspect returns a human-readable representation of ClassInstance.
 func (c *ClassInstance) Inspect() string {
-	keys := make([]string, 0, len(c.Fields))
-	for k := range c.Fields {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	parts := make([]string, len(keys))
-	for i, k := range keys {
-		parts[i] = fmt.Sprintf("%s: %s", k, c.Fields[k].Inspect())
-	}
-	return fmt.Sprintf("%s{%s}", c.Definition.Name, strings.Join(parts, ", "))
+	return inspectFields(c.Definition.Name, c.Fields)
 }
 
 func (c *ClassType) lookupMethod(name string) (*Function, bool) {
@@ -316,12 +322,21 @@ func (e *EnumType) Type() string { return "Enum" }
 
 // Inspect returns a human-readable representation of EnumType.
 func (e *EnumType) Inspect() string {
-	keys := make([]string, 0, len(e.Cases))
-	for k := range e.Cases {
-		keys = append(keys, k)
+	keys := sortedKeys(e.Cases)
+
+	b := borrowBuilder()
+	b.Grow(len(e.Name) + len(keys)*4 + 10)
+	b.WriteString("<enum ")
+	b.WriteString(e.Name)
+	b.WriteString(" [")
+	for i, key := range keys {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(key)
 	}
-	sort.Strings(keys)
-	return fmt.Sprintf("<enum %s [%s]>", e.Name, strings.Join(keys, ", "))
+	b.WriteString("]>")
+	return finishBuilder(b)
 }
 
 // EnumInstance stores the active case of an enumeration.
@@ -337,14 +352,24 @@ func (e *EnumInstance) Type() string { return e.Enum.Name }
 
 // Inspect returns a human-readable representation of EnumInstance.
 func (e *EnumInstance) Inspect() string {
-	args := make([]string, len(e.Order))
+	if len(e.Order) == 0 {
+		return e.Enum.Name + "." + e.Case
+	}
+
+	b := borrowBuilder()
+	b.Grow(len(e.Enum.Name) + len(e.Case) + len(e.Order)*4 + 4)
+	b.WriteString(e.Enum.Name)
+	b.WriteByte('.')
+	b.WriteString(e.Case)
+	b.WriteByte('(')
 	for i, name := range e.Order {
-		args[i] = e.Fields[name].Inspect()
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(e.Fields[name].Inspect())
 	}
-	if len(args) == 0 {
-		return fmt.Sprintf("%s.%s", e.Enum.Name, e.Case)
-	}
-	return fmt.Sprintf("%s.%s(%s)", e.Enum.Name, e.Case, strings.Join(args, ", "))
+	b.WriteByte(')')
+	return finishBuilder(b)
 }
 
 // ChannelValue represents a concurrent communication channel.
@@ -363,7 +388,14 @@ func (c *ChannelValue) Inspect() string {
 	if c.closed {
 		state = "closed"
 	}
-	return fmt.Sprintf("<channel %s capacity=%d>", state, c.capacity)
+
+	b := borrowBuilder()
+	b.WriteString("<channel ")
+	b.WriteString(state)
+	b.WriteString(" capacity=")
+	b.WriteString(strconv.Itoa(c.capacity))
+	b.WriteByte('>')
+	return finishBuilder(b)
 }
 
 func (c *ChannelValue) send(val Value) error {
@@ -448,12 +480,20 @@ func (c *Contract) Type() string { return "Contract" }
 
 // Inspect returns a human-readable representation of Contract.
 func (c *Contract) Inspect() string {
-	keys := make([]string, 0, len(c.Exports))
-	for k := range c.Exports {
-		keys = append(keys, k)
+	keys := sortedKeys(c.Exports)
+	b := borrowBuilder()
+	b.Grow(len(c.Name) + len(keys)*4 + 12)
+	b.WriteString("<contract ")
+	b.WriteString(c.Name)
+	b.WriteString(" [")
+	for i, key := range keys {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(key)
 	}
-	sort.Strings(keys)
-	return fmt.Sprintf("<contract %s [%s]>", c.Name, strings.Join(keys, ", "))
+	b.WriteString("]>")
+	return finishBuilder(b)
 }
 
 // InterfaceType records an interface name and required methods.
@@ -467,12 +507,20 @@ func (i *InterfaceType) Type() string { return "Interface" }
 
 // Inspect returns a human-readable representation of InterfaceType.
 func (i *InterfaceType) Inspect() string {
-	keys := make([]string, 0, len(i.Methods))
-	for k := range i.Methods {
-		keys = append(keys, k)
+	keys := sortedKeys(i.Methods)
+	b := borrowBuilder()
+	b.Grow(len(i.Name) + len(keys)*4 + 12)
+	b.WriteString("<interface ")
+	b.WriteString(i.Name)
+	b.WriteString(" [")
+	for j, key := range keys {
+		if j > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(key)
 	}
-	sort.Strings(keys)
-	return fmt.Sprintf("<interface %s [%s]>", i.Name, strings.Join(keys, ", "))
+	b.WriteString("]>")
+	return finishBuilder(b)
 }
 
 // BuiltinFunction is a Go function exposed as a Selene builtin.
@@ -492,7 +540,11 @@ func (f *Function) Type() string { return "Function" }
 // Inspect returns a human-readable representation of Function.
 func (f *Function) Inspect() string {
 	if f.Name != "" {
-		return fmt.Sprintf("<fn %s>", f.Name)
+		b := borrowBuilder()
+		b.WriteString("<fn ")
+		b.WriteString(f.Name)
+		b.WriteByte('>')
+		return finishBuilder(b)
 	}
 	return "<fn>"
 }
@@ -570,11 +622,10 @@ func NewEnclosedEnvironment(outer *Environment) *Environment {
 
 // Get looks up a value in the environment chain.
 func (e *Environment) Get(name string) (Value, bool) {
-	if val, ok := e.store[name]; ok {
-		return val, true
-	}
-	if e.outer != nil {
-		return e.outer.Get(name)
+	for env := e; env != nil; env = env.outer {
+		if val, ok := env.store[name]; ok {
+			return val, true
+		}
 	}
 	return nil, false
 }
@@ -587,31 +638,28 @@ func (e *Environment) Set(name string, val Value) Value {
 
 // Snapshot returns a copy of the environment bindings.
 func (e *Environment) Snapshot() map[string]Value {
-	out := make(map[string]Value, len(e.store))
-	for k, v := range e.store {
-		out[k] = v
+	if len(e.store) == 0 {
+		return make(map[string]Value)
 	}
-	return out
+	return maps.Clone(e.store)
 }
 
 // Assign updates an existing binding in the environment chain.
 func (e *Environment) Assign(name string, val Value) (Value, error) {
-	if _, ok := e.store[name]; ok {
-		e.store[name] = val
-		return val, nil
-	}
-	if e.outer != nil {
-		return e.outer.Assign(name, val)
+	for env := e; env != nil; env = env.outer {
+		if _, ok := env.store[name]; ok {
+			env.store[name] = val
+			return val, nil
+		}
 	}
 	return nil, fmt.Errorf("undefined variable %s", name)
 }
 
 func (e *Environment) resolve(name string) (*Environment, bool) {
-	if _, ok := e.store[name]; ok {
-		return e, true
-	}
-	if e.outer != nil {
-		return e.outer.resolve(name)
+	for env := e; env != nil; env = env.outer {
+		if _, ok := env.store[name]; ok {
+			return env, true
+		}
 	}
 	return nil, false
 }
@@ -626,7 +674,12 @@ type Pointer struct {
 func (p *Pointer) Type() string { return "Pointer" }
 
 // Inspect returns a human-readable representation of Pointer.
-func (p *Pointer) Inspect() string { return fmt.Sprintf("&%s", p.name) }
+func (p *Pointer) Inspect() string {
+	b := borrowBuilder()
+	b.WriteByte('&')
+	b.WriteString(p.name)
+	return finishBuilder(b)
+}
 
 func (p *Pointer) get() (Value, error) {
 	if p == nil || p.env == nil {

@@ -3,6 +3,7 @@ package runtime
 import (
 	"encoding/binary"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/cybellereaper/selenelang/internal/ast"
@@ -26,7 +27,7 @@ type Chunk struct {
 
 // Instructions returns the raw bytecode instructions.
 func (c *Chunk) Instructions() []byte {
-	return append([]byte(nil), c.code...)
+	return slices.Clone(c.code)
 }
 
 // ItemCount reports the number of program items referenced by the chunk.

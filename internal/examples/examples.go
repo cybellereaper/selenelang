@@ -3,13 +3,14 @@ package examples
 
 import (
 	"bytes"
+	"cmp"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strings"
 
 	"github.com/cybellereaper/selenelang/internal/jit"
@@ -74,8 +75,8 @@ func Discover(root string, roots []string) ([]Script, error) {
 			return nil, err
 		}
 	}
-	sort.Slice(scripts, func(i, j int) bool {
-		return scripts[i].Relative < scripts[j].Relative
+	slices.SortFunc(scripts, func(a, b Script) int {
+		return cmp.Compare(a.Relative, b.Relative)
 	})
 	return scripts, nil
 }
@@ -90,11 +91,17 @@ func Run(script Script, mode Mode, stdout io.Writer) error {
 	rt := runtime.New()
 	if stdout != nil {
 		rt.Environment().Set("print", runtime.NewBuiltin("print", func(args []runtime.Value) (runtime.Value, error) {
-			parts := make([]string, len(args))
 			for i, arg := range args {
-				parts[i] = arg.Inspect()
+				if i > 0 {
+					if _, err := io.WriteString(stdout, " "); err != nil {
+						return nil, err
+					}
+				}
+				if _, err := io.WriteString(stdout, arg.Inspect()); err != nil {
+					return nil, err
+				}
 			}
-			if _, err := fmt.Fprintln(stdout, strings.Join(parts, " ")); err != nil {
+			if _, err := io.WriteString(stdout, "\n"); err != nil {
 				return nil, err
 			}
 			return runtime.NullValue, nil
@@ -131,7 +138,7 @@ func RunAll(scripts []Script, modes []Mode) []error {
 	if len(modes) == 0 {
 		modes = []Mode{ModeInterpreter}
 	}
-	errs := make([]error, 0)
+	errs := make([]error, 0, len(scripts)*len(modes))
 	for _, script := range scripts {
 		for _, mode := range modes {
 			if err := Run(script, mode, io.Discard); err != nil {
@@ -155,7 +162,7 @@ func ManifestRoots(root string) ([]string, error) {
 	if len(manifest.Examples.Roots) == 0 {
 		return []string{"examples"}, nil
 	}
-	return append([]string(nil), manifest.Examples.Roots...), nil
+	return slices.Clone(manifest.Examples.Roots), nil
 }
 
 // Capture executes the script using the interpreter and returns everything the

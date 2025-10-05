@@ -3,6 +3,8 @@ package transpile
 
 import (
 	"fmt"
+	"maps"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -49,10 +51,7 @@ func ToGo(program *ast.Program) (string, error) {
 	if len(imports) > 0 {
 		emitter.writeLine("import (")
 		emitter.indent++
-		paths := make([]string, 0, len(imports))
-		for path := range imports {
-			paths = append(paths, path)
-		}
+		paths := slices.Collect(maps.Keys(imports))
 		sort.Strings(paths)
 		for _, path := range paths {
 			alias := imports[path]
