@@ -12,9 +12,15 @@ Welcome to the Selene launchpad! This guide walks through installing the toolcha
 - [Go 1.21+](https://go.dev/dl/) for building the CLI and embedding Selene.
 - A terminal with access to standard developer tools.
 
+## Grab a release build
+
+The quickest path is to download a prebuilt archive from the [GitHub Releases](https://github.com/cybellereaper/selenelang/releases) page.
+Each asset bundles the CLI binary and license for Linux, macOS, and Windows.
+Unpack the archive that matches your platform and move the `selene` (or `selene.exe`) binary somewhere on your `PATH`.
+
 ## Fetch the source
 
-Clone the repository and download dependencies:
+Prefer to build it yourself or hack on the language? Clone the repository and download dependencies:
 
 ```bash
 git clone https://github.com/your-user/selenelang.git

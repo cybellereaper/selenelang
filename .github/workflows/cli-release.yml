@@ -1,0 +1,148 @@
+name: Selene CLI Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag to create or update for this release (for example, v0.5.0)'
+        required: true
+      release_name:
+        description: 'Optional release title. Defaults to the tag name.'
+        required: false
+      prerelease:
+        description: 'Mark the release as a prerelease'
+        required: false
+        default: 'false'
+      draft:
+        description: 'Mark the release as a draft'
+        required: false
+        default: 'false'
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build ${{ matrix.goos }}-${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            archive_extension: tar.gz
+            binary_extension: ''
+          - goos: linux
+            goarch: arm64
+            archive_extension: tar.gz
+            binary_extension: ''
+          - goos: darwin
+            goarch: amd64
+            archive_extension: tar.gz
+            binary_extension: ''
+          - goos: darwin
+            goarch: arm64
+            archive_extension: tar.gz
+            binary_extension: ''
+          - goos: windows
+            goarch: amd64
+            archive_extension: zip
+            binary_extension: .exe
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build CLI binary
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          go build -o build/selene${{ matrix.binary_extension }} ./cmd/selene
+
+      - name: Package archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="selene-${{ matrix.goos }}-${{ matrix.goarch }}"
+          staging="dist/$archive"
+          mkdir -p "$staging"
+          cp build/selene${{ matrix.binary_extension }} "$staging/"
+          cp LICENSE "$staging/"
+          if [ "${{ matrix.archive_extension }}" = "zip" ]; then
+            (cd dist && zip -r "$archive.zip" "$archive")
+          else
+            (cd dist && tar -czf "$archive.tar.gz" "$archive")
+          fi
+          rm -rf "$staging"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: selene-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/selene-${{ matrix.goos }}-${{ matrix.goarch }}.${{ matrix.archive_extension }}
+
+  publish:
+    name: Publish Release Assets
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine release metadata
+        id: release
+        shell: bash
+        env:
+          DISPATCH_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || '' }}
+          DISPATCH_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.release_name || '' }}
+          DISPATCH_PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || 'false' }}
+          DISPATCH_DRAFT: ${{ github.event_name == 'workflow_dispatch' && inputs.draft || 'false' }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            tag="${GITHUB_REF#refs/tags/}"
+            name="$tag"
+            prerelease="false"
+            draft="false"
+          else
+            tag="${DISPATCH_TAG}"
+            if [[ -z "${tag}" ]]; then
+              echo "::error::A tag name is required when running via workflow_dispatch." >&2
+              exit 1
+            fi
+            if [[ -n "${DISPATCH_NAME}" ]]; then
+              name="${DISPATCH_NAME}"
+            else
+              name="$tag"
+            fi
+            prerelease="${DISPATCH_PRERELEASE:-false}"
+            draft="${DISPATCH_DRAFT:-false}"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          echo "draft=$draft" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+          pattern: selene-*
+          merge-multiple: true
+
+      - name: List release assets
+        run: ls -R release
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          tag_name: ${{ steps.release.outputs.tag }}
+          name: ${{ steps.release.outputs.name }}
+          generate_release_notes: true
+          draft: ${{ steps.release.outputs.draft }}
+          prerelease: ${{ steps.release.outputs.prerelease }}
