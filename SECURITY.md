@@ -6,7 +6,7 @@ Selene is currently in active development. We aim to keep the `main` branch secu
 
 ## Reporting a vulnerability
 
-If you discover a security vulnerability, please email `security@selene-lang.org` with the following information:
+If you discover a security vulnerability, please open an issue with the following information:
 
 - A detailed description of the issue.
 - Steps to reproduce and, if possible, a minimal proof-of-concept.
