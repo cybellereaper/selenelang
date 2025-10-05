@@ -94,6 +94,16 @@ selene test --mode all --verbose
 | `selene init <module>` | Scaffold a new workspace with a manifest, documentation skeleton, and starter source file. |
 | `selene lsp` | Launch the Language Server Protocol endpoint used by editors and the VS Code extension. |
 
+### Dependency management upgrades
+
+The `deps add` subcommand can now source code directly from a Git repository, making it much easier to vendor Selene packages without crafting a staging directory first. Provide a module path and version, and (optionally) a `--source` URL if it differs from the module identifier:
+
+```bash
+selene deps add github.com/selene-lang/richmath v1.0.0 --source https://github.com/selene-lang/richmath.git
+```
+
+Selene will clone the tagged release into `vendor/`, compute the checksum, and update both `selene.toml` and `selene.lock`. You can still point `--path` at local sources when working offline—the flag remains available for advanced workflows.
+
 ## Example nebula
 
 The `examples/` directory is now organized by theme so you can warp directly to the scenario you need:
@@ -173,6 +183,9 @@ make test
 # keep module metadata tidy and produce coverage artifacts
 make tidy
 make coverage
+
+# check for known vulnerabilities (requires govulncheck)
+make vulncheck
 ```
 
 These commands wrap the standard Go tooling so contributors get consistent formatting, vetting, and testing locally and in CI.

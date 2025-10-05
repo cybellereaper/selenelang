@@ -82,8 +82,7 @@ func FindRoot(start string) (string, error) {
 
 // LoadManifest reads and decodes the selene.toml located at root.
 func LoadManifest(root string) (*Manifest, error) {
-	path := filepath.Join(root, ManifestName)
-	data, err := os.ReadFile(path)
+	data, err := ReadFile(root, ManifestName)
 	if err != nil {
 		return nil, err
 	}
@@ -275,8 +274,11 @@ func SaveManifest(root string, manifest *Manifest) error {
 		}
 	}
 
-	path := filepath.Join(root, ManifestName)
-	return os.WriteFile(path, buf.Bytes(), 0o644)
+	path, err := ResolveUnderRoot(root, ManifestName)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, buf.Bytes(), 0o600)
 }
 
 func writeStringArray(buf *bytes.Buffer, key string, values []string) {
@@ -289,8 +291,7 @@ func writeStringArray(buf *bytes.Buffer, key string, values []string) {
 
 // LoadLockfile decodes selene.lock if present. Missing files are treated as empty lockfiles.
 func LoadLockfile(root string) (*Lockfile, error) {
-	path := filepath.Join(root, LockName)
-	data, err := os.ReadFile(path)
+	data, err := ReadFile(root, LockName)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return &Lockfile{}, nil
@@ -352,8 +353,11 @@ func SaveLockfile(root string, lock *Lockfile) error {
 		fmt.Fprintf(&buf, "checksum = \"%s\"\n", dep.Checksum)
 		fmt.Fprintf(&buf, "vendor = \"%s\"\n\n", dep.Vendor)
 	}
-	path := filepath.Join(root, LockName)
-	return os.WriteFile(path, buf.Bytes(), 0o644)
+	path, err := ResolveUnderRoot(root, LockName)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, buf.Bytes(), 0o600)
 }
 
 // Set ensures a dependency entry is updated (or appended) in the lockfile.

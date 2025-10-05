@@ -1,6 +1,7 @@
 package lsp
 
 import (
+	"math"
 	"slices"
 	"sort"
 	"strings"
@@ -20,6 +21,18 @@ type semanticToken struct {
 	length    int
 	tokenType int
 	modifiers int
+}
+
+const maxUint32 = uint64(math.MaxUint32)
+
+func safeUint32(value int) (uint32, bool) {
+	if value < 0 {
+		return 0, false
+	}
+	if uint64(value) > maxUint32 {
+		return 0, false
+	}
+	return uint32(value), true
 }
 
 // NewHighlighter constructs a semantic token highlighter with Selene token types.
@@ -264,7 +277,30 @@ func encodeSemanticSegments(segments []semanticToken) SemanticTokens {
 				deltaStart = seg.start - prevStart
 			}
 		}
-		data = append(data, uint32(deltaLine), uint32(deltaStart), uint32(seg.length), uint32(seg.tokenType), uint32(seg.modifiers))
+		if deltaLine < 0 || deltaStart < 0 || seg.length < 0 || seg.tokenType < 0 || seg.modifiers < 0 {
+			continue
+		}
+		lineVal, ok := safeUint32(deltaLine)
+		if !ok {
+			continue
+		}
+		startVal, ok := safeUint32(deltaStart)
+		if !ok {
+			continue
+		}
+		lengthVal, ok := safeUint32(seg.length)
+		if !ok {
+			continue
+		}
+		typeVal, ok := safeUint32(seg.tokenType)
+		if !ok {
+			continue
+		}
+		modifierVal, ok := safeUint32(seg.modifiers)
+		if !ok {
+			continue
+		}
+		data = append(data, lineVal, startVal, lengthVal, typeVal, modifierVal)
 		prevLine = seg.line
 		prevStart = seg.start
 		first = false

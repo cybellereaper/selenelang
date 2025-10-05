@@ -24,9 +24,33 @@ import (
 // and auxiliary tooling) can reuse the same entry point without duplicating the
 // lexing/parsing pipeline.
 func ParseFile(filename string) (*ast.Program, string, error) {
-	content, err := os.ReadFile(filename)
+	absPath, err := filepath.Abs(filename)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to read %s: %w", filename, err)
+		return nil, "", fmt.Errorf("failed to resolve %s: %w", filename, err)
+	}
+	root, err := project.FindRoot(filepath.Dir(absPath))
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			root = filepath.Dir(absPath)
+		} else {
+			return nil, "", fmt.Errorf("unable to determine Selene project root for %s: %w", absPath, err)
+		}
+	}
+	rel, err := filepath.Rel(root, absPath)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to relativise %s: %w", absPath, err)
+	}
+	rel = filepath.Clean(rel)
+	if rel == ".." || strings.HasPrefix(rel, ".."+string(os.PathSeparator)) {
+		return nil, "", fmt.Errorf("refusing to read file outside project root: %s", absPath)
+	}
+	resolved, err := project.ResolveUnderRoot(root, rel)
+	if err != nil {
+		return nil, "", err
+	}
+	content, err := project.ReadFile(root, rel)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read %s: %w", resolved, err)
 	}
 	source := string(content)
 	l := lexer.New(source)
@@ -86,7 +110,10 @@ func LoadDependencies(rt *runtime.Runtime, entry string) error {
 		if !ok {
 			return fmt.Errorf("dependency %s is not recorded in selene.lock", module)
 		}
-		vendorPath := filepath.Join(root, locked.Vendor)
+		vendorPath, err := project.ResolveUnderRoot(root, locked.Vendor)
+		if err != nil {
+			return err
+		}
 		if err := project.VerifyChecksum(vendorPath, locked.Checksum); err != nil {
 			return fmt.Errorf("%s: %w", module, err)
 		}

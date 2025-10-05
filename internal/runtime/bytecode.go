@@ -3,6 +3,7 @@ package runtime
 import (
 	"encoding/binary"
 	"fmt"
+	"math"
 	"slices"
 	"strings"
 
@@ -97,16 +98,22 @@ func newCompiler() *compiler {
 
 func (c *compiler) compile(program *ast.Program) (*Chunk, error) {
 	for _, item := range program.Items {
-		c.emitEvalItem(item)
+		if err := c.emitEvalItem(item); err != nil {
+			return nil, err
+		}
 	}
 	c.chunk.writeOp(OpReturn)
 	return c.chunk, nil
 }
 
-func (c *compiler) emitEvalItem(item ast.ProgramItem) {
+func (c *compiler) emitEvalItem(item ast.ProgramItem) error {
 	index := c.chunk.addItem(item)
+	if index < 0 || index > math.MaxUint16 {
+		return fmt.Errorf("program item index %d out of range", index)
+	}
 	c.chunk.writeOp(OpEvalItem)
 	c.chunk.writeUint16(uint16(index))
+	return nil
 }
 
 // Compile converts a parsed program into bytecode that can be executed by the Selene VM.
