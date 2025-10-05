@@ -1,0 +1,95 @@
+name: Selene CLI Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build ${{ matrix.goos }}-${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            archive_extension: tar.gz
+            binary_extension: ''
+          - goos: linux
+            goarch: arm64
+            archive_extension: tar.gz
+            binary_extension: ''
+          - goos: darwin
+            goarch: amd64
+            archive_extension: tar.gz
+            binary_extension: ''
+          - goos: darwin
+            goarch: arm64
+            archive_extension: tar.gz
+            binary_extension: ''
+          - goos: windows
+            goarch: amd64
+            archive_extension: zip
+            binary_extension: .exe
+    env:
+      GOOS: ${{ matrix.goos }}
+      GOARCH: ${{ matrix.goarch }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build CLI binary
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          go build -o build/selene${{ matrix.binary_extension }} ./cmd/selene
+
+      - name: Package archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="selene-${{ matrix.goos }}-${{ matrix.goarch }}"
+          staging="dist/$archive"
+          mkdir -p "$staging"
+          cp build/selene${{ matrix.binary_extension }} "$staging/"
+          cp LICENSE "$staging/"
+          if [ "${{ matrix.archive_extension }}" = "zip" ]; then
+            (cd dist && zip -r "$archive.zip" "$archive")
+          else
+            (cd dist && tar -czf "$archive.tar.gz" "$archive")
+          fi
+          rm -rf "$staging"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: selene-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/selene-${{ matrix.goos }}-${{ matrix.goarch }}.${{ matrix.archive_extension }}
+
+  publish:
+    name: Publish Release Assets
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release
+          pattern: selene-*
+          merge-multiple: true
+
+      - name: List release assets
+        run: ls -R release
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
