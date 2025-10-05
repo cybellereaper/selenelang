@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -145,10 +147,7 @@ func mergeModules(target, source *runtime.Module) {
 	if target.Exports == nil {
 		target.Exports = make(map[string]runtime.Value)
 	}
-	keys := make([]string, 0, len(source.Exports))
-	for name := range source.Exports {
-		keys = append(keys, name)
-	}
+	keys := slices.Collect(maps.Keys(source.Exports))
 	sort.Strings(keys)
 	for _, name := range keys {
 		val := source.Exports[name]

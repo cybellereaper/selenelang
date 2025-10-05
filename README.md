@@ -32,7 +32,7 @@ Selene is an experimental programming-language frontend written in Go. It packag
 
 ## Quick launch
 
-> 🚀 **Launch checklist:** Go 1.21+, a POSIX shell, and curiosity.
+> 🚀 **Launch checklist:** Go 1.25.1+, a POSIX shell, and curiosity.
 
 ```bash
 git clone https://github.com/cybellereaper/selenelang.git
@@ -156,6 +156,26 @@ func main() {
 ```
 
 From here you can extend the runtime with new built-ins, feed compiled bytecode into the VM, or export diagnostics into your own editor integrations.
+
+## Development
+
+Selene targets the Go 1.25.1 toolchain and includes a convenience `Makefile` to keep routine workflows fast:
+
+```bash
+# see the available tasks
+make help
+
+# format, vet, and test the codebase (tests run with the race detector and shuffling enabled)
+make fmt
+make vet
+make test
+
+# keep module metadata tidy and produce coverage artifacts
+make tidy
+make coverage
+```
+
+These commands wrap the standard Go tooling so contributors get consistent formatting, vetting, and testing locally and in CI.
 
 ## Repository map
 
