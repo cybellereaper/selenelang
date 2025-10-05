@@ -2,6 +2,21 @@ name: Selene CLI Release
 
 on:
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag to create or update for this release (for example, v0.5.0)'
+        required: true
+      release_name:
+        description: 'Optional release title. Defaults to the tag name.'
+        required: false
+      prerelease:
+        description: 'Mark the release as a prerelease'
+        required: false
+        default: 'false'
+      draft:
+        description: 'Mark the release as a draft'
+        required: false
+        default: 'false'
   push:
     tags:
       - 'v*'
@@ -78,6 +93,40 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - name: Determine release metadata
+        id: release
+        shell: bash
+        env:
+          DISPATCH_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || '' }}
+          DISPATCH_NAME: ${{ github.event_name == 'workflow_dispatch' && inputs.release_name || '' }}
+          DISPATCH_PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || 'false' }}
+          DISPATCH_DRAFT: ${{ github.event_name == 'workflow_dispatch' && inputs.draft || 'false' }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            tag="${GITHUB_REF#refs/tags/}"
+            name="$tag"
+            prerelease="false"
+            draft="false"
+          else
+            tag="${DISPATCH_TAG}"
+            if [[ -z "${tag}" ]]; then
+              echo "::error::A tag name is required when running via workflow_dispatch." >&2
+              exit 1
+            fi
+            if [[ -n "${DISPATCH_NAME}" ]]; then
+              name="${DISPATCH_NAME}"
+            else
+              name="$tag"
+            fi
+            prerelease="${DISPATCH_PRERELEASE:-false}"
+            draft="${DISPATCH_DRAFT:-false}"
+          fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          echo "draft=$draft" >> "$GITHUB_OUTPUT"
+
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
@@ -89,6 +138,14 @@ jobs:
         run: ls -R release
 
       - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          tag_name: ${{ steps.release.outputs.tag }}
+          name: ${{ steps.release.outputs.name }}
+          generate_release_notes: true
+          draft: ${{ steps.release.outputs.draft }}
+          prerelease: ${{ steps.release.outputs.prerelease }}
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
