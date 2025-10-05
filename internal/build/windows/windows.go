@@ -105,6 +105,7 @@ func BuildExecutable(startDir, sourceName, sourceCode, output string) error {
 	if relMain == ".." || strings.HasPrefix(relMain, ".."+string(os.PathSeparator)) {
 		return fmt.Errorf("temporary build file escaped module root: %s", mainFile)
 	}
+	// #nosec G204 -- arguments use sanitized paths constrained to the module root.
 	cmd := exec.Command("go", "build", "-o", absOut, relMain)
 	cmd.Dir = moduleRoot
 	cmd.Env = append(os.Environ(), "GOOS=windows", "GOARCH=amd64")

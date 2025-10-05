@@ -73,11 +73,13 @@ func CopyIntoVendor(src, dest string) error {
 }
 
 func copyFile(src, dest string) (err error) {
+	// #nosec G304 -- src and dest are derived from paths constrained by ResolveUnderRoot and absolute walk roots.
 	in, err := os.Open(src)
 	if err != nil {
 		return err
 	}
 	defer in.Close()
+	// #nosec G304 -- dest path is sanitized via ResolveUnderRoot prior to invocation.
 	out, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o600)
 	if err != nil {
 		return err

@@ -82,11 +82,7 @@ func FindRoot(start string) (string, error) {
 
 // LoadManifest reads and decodes the selene.toml located at root.
 func LoadManifest(root string) (*Manifest, error) {
-	path, err := ResolveUnderRoot(root, ManifestName)
-	if err != nil {
-		return nil, err
-	}
-	data, err := os.ReadFile(path)
+	data, err := ReadFile(root, ManifestName)
 	if err != nil {
 		return nil, err
 	}
@@ -295,11 +291,7 @@ func writeStringArray(buf *bytes.Buffer, key string, values []string) {
 
 // LoadLockfile decodes selene.lock if present. Missing files are treated as empty lockfiles.
 func LoadLockfile(root string) (*Lockfile, error) {
-	path, err := ResolveUnderRoot(root, LockName)
-	if err != nil {
-		return nil, err
-	}
-	data, err := os.ReadFile(path)
+	data, err := ReadFile(root, LockName)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return &Lockfile{}, nil

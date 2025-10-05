@@ -303,7 +303,7 @@ func fmtCommand(args []string) error {
 		if err != nil {
 			return err
 		}
-		data, err := os.ReadFile(resolved)
+		data, err := readFileSecure(resolved)
 		if err != nil {
 			return err
 		}
@@ -656,7 +656,7 @@ func dumpTokens(filename string) error {
 	if err != nil {
 		return err
 	}
-	content, err := os.ReadFile(resolved)
+	content, err := readFileSecure(resolved)
 	if err != nil {
 		return fmt.Errorf("failed to read %s: %w", resolved, err)
 	}
@@ -697,6 +697,11 @@ func resolvePathWithinRoot(root, candidate string) (string, error) {
 		return "", fmt.Errorf("path %s escapes project root %s", absCandidate, absRoot)
 	}
 	return project.ResolveUnderRoot(absRoot, rel)
+}
+
+func readFileSecure(path string) ([]byte, error) {
+	// #nosec G304 -- path is produced by resolvePathWithinRoot which constrains access to the project root.
+	return os.ReadFile(path)
 }
 
 func writeFileSecure(path string, data []byte) error {

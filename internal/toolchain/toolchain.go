@@ -48,7 +48,7 @@ func ParseFile(filename string) (*ast.Program, string, error) {
 	if err != nil {
 		return nil, "", err
 	}
-	content, err := os.ReadFile(resolved)
+	content, err := project.ReadFile(root, rel)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to read %s: %w", resolved, err)
 	}
