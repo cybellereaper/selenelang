@@ -4,4 +4,4 @@ go 1.25
 
 toolchain go1.25.1
 
-require golang.org/x/mod v0.28.0
+require golang.org/x/mod v0.31.0
