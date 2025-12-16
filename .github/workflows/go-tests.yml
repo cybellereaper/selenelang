@@ -32,7 +32,7 @@ jobs:
       - name: Generate coverage report
         run: go test -covermode=atomic -coverprofile=coverage.out ./...
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: coverage
           path: coverage.out
